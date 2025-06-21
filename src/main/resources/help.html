@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>&#x516c;&#x5171;&#x6a21;&#x5757;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h3 id="公共模块">公共模块</h3>
+<pre><code class="language-text">本版本发布时间为 2021-05-01  适配jdk版本为 1.8
+</code></pre>
+<h4 id="1-配置">1 配置</h4>
+<h5 id="11-添加依赖">1.1 添加依赖</h5>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;com.na&lt;/groupId&gt;
+    &lt;artifactId&gt;na-common&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/dependency&gt;
+        
+或者
+
+&lt;dependency&gt;
+    &lt;groupId&gt;com.na&lt;/groupId&gt;
+    &lt;artifactId&gt;na-common&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+    &lt;scope&gt;system&lt;/scope&gt;
+    &lt;systemPath&gt;${project.basedir}/../lib/na-common-1.0.0.jar&lt;/systemPath&gt;
+&lt;/dependency&gt;
+
+相关依赖
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;commons-beanutils&lt;/groupId&gt;
+            &lt;artifactId&gt;commons-beanutils&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+            &lt;artifactId&gt;jjwt-api&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+            &lt;artifactId&gt;jjwt-impl&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+            &lt;artifactId&gt;jjwt-jackson&lt;/artifactId&gt; &lt;!-- 依赖 Jackson 用于 JSON 解析 --&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-data-redis&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.redisson&lt;/groupId&gt;
+            &lt;artifactId&gt;redisson-spring-data-25&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.apache.commons&lt;/groupId&gt;
+            &lt;artifactId&gt;commons-pool2&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.lionsoul&lt;/groupId&gt;
+            &lt;artifactId&gt;ip2region&lt;/artifactId&gt;
+            &lt;version&gt;2.7.0&lt;/version&gt;
+        &lt;/dependency&gt;
+        
+        &lt;!-- 某些版本Tomcat需要以下依赖 --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.jboss.xnio&lt;/groupId&gt;
+            &lt;artifactId&gt;xnio-api&lt;/artifactId&gt;
+            &lt;version&gt;3.8.7.Final&lt;/version&gt;  &lt;!-- 与 Undertow 2.2.x 兼容的版本 --&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.jboss.xnio&lt;/groupId&gt;
+            &lt;artifactId&gt;xnio-nio&lt;/artifactId&gt;
+            &lt;version&gt;3.8.7.Final&lt;/version&gt;  &lt;!-- 与 Undertow 2.2.x 兼容的版本 --&gt;
+        &lt;/dependency&gt;
+        
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.springfox&lt;/groupId&gt;
+            &lt;artifactId&gt;springfox-swagger2&lt;/artifactId&gt;
+            &lt;version&gt;3.0.0&lt;/version&gt; &lt;!-- 或更高版本 --&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;io.springfox&lt;/groupId&gt;
+            &lt;artifactId&gt;springfox-swagger-ui&lt;/artifactId&gt;
+            &lt;version&gt;3.0.0&lt;/version&gt; &lt;!-- 或更高版本 --&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.apache.poi&lt;/groupId&gt;
+            &lt;artifactId&gt;poi-ooxml&lt;/artifactId&gt;
+            &lt;scope&gt;provided&lt;/scope&gt;
+        &lt;/dependency&gt;
+        &lt;!-- 二维码--&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.google.zxing&lt;/groupId&gt;
+            &lt;artifactId&gt;core&lt;/artifactId&gt;
+            &lt;scope&gt;provided&lt;/scope&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.google.zxing&lt;/groupId&gt;
+            &lt;artifactId&gt;javase&lt;/artifactId&gt;
+            &lt;scope&gt;provided&lt;/scope&gt;
+        &lt;/dependency&gt;
+</code></pre>
+<h5 id="12-可能需要升级以下依赖">1.2 可能需要升级以下依赖</h5>
+<pre><code>        &lt;dependency&gt;
+            &lt;groupId&gt;com.alibaba&lt;/groupId&gt;
+            &lt;artifactId&gt;druid-spring-boot-starter&lt;/artifactId&gt;
+            &lt;version&gt;1.2.17&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;!-- mysql--&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;mysql&lt;/groupId&gt;
+            &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+            &lt;version&gt;8.0.33&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.baomidou&lt;/groupId&gt;
+            &lt;artifactId&gt;mybatis-plus-boot-starter&lt;/artifactId&gt;
+            &lt;version&gt;3.5.7&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.baomidou&lt;/groupId&gt;
+            &lt;artifactId&gt;mybatis-plus-extension&lt;/artifactId&gt;
+            &lt;version&gt;3.5.7&lt;/version&gt;
+        &lt;/dependency&gt;
+
+</code></pre>
+<h5 id="13-配置">1.3 配置</h5>
+<pre><code class="language-yaml"><span class="hljs-attr">na:</span>
+  <span class="hljs-attr">swagger:</span>
+<span class="hljs-comment"># 默认为 true，false则不启用</span>
+    <span class="hljs-attr">enabled:</span> <span class="hljs-literal">true</span>
+    <span class="hljs-attr">description:</span> <span class="hljs-string">&quot;NA平台&quot;</span>
+<span class="hljs-comment"># 单体是必填</span>
+    <span class="hljs-attr">package:</span> <span class="hljs-string">&quot;com.na&quot;</span>
+    <span class="hljs-attr">title:</span> <span class="hljs-string">&quot;NA平台&quot;</span>
+    <span class="hljs-attr">termsOfServiceUrl:</span> <span class="hljs-string">&quot;http://www.naXXX.com&quot;</span>
+    <span class="hljs-attr">license:</span> <span class="hljs-string">&quot;NA平台&quot;</span>
+    <span class="hljs-attr">licenseUrl:</span> <span class="hljs-string">&quot;http://www.naXXX.com&quot;</span>
+    <span class="hljs-attr">version:</span> <span class="hljs-string">&quot;1.0.0&quot;</span>
+    <span class="hljs-attr">contact:</span>
+      <span class="hljs-attr">name:</span> <span class="hljs-string">na</span>
+      <span class="hljs-attr">email:</span> <span class="hljs-string">na_tool@163.com</span>
+      <span class="hljs-attr">url:</span> <span class="hljs-string">https://www.naXXX.com</span>
+<span class="hljs-comment"># 开启跨域</span>
+  <span class="hljs-attr">cors:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># mybatis-plus insert update 时候自动更新时间</span>
+  <span class="hljs-attr">sqlTime:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># mybatis-plus 分页</span>
+  <span class="hljs-attr">mybatis:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># redis 常规操作并提供序列化方式</span>
+  <span class="hljs-attr">redis:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># 通过 Redisson 客户端操作 Redis , 提供对 Redis 更高级功能的支持，例如分布式锁、信号量、布隆过滤器等</span>
+  <span class="hljs-attr">redissonClient:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># 监听 Redis 的发布/订阅消息 , 这里用于监听 Redis 的特定事件（如键过期事件）</span>
+  <span class="hljs-attr">redisListener:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># 实现自定义的键过期事件处理逻辑</span>
+  <span class="hljs-attr">redisMessage:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># HTTP 请求工厂 , 支持简单的同步 HTTP 调用</span>
+  <span class="hljs-attr">rest:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># 配置 Jackson 的 ObjectMapper 实例, 用于序列化和反序列化 JSON 数据 , 自定义了数据格式转换防止精度丢失等</span>
+  <span class="hljs-attr">jackson:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># 错误页跳转</span>
+  <span class="hljs-attr">errorPage:</span> <span class="hljs-literal">true</span>
+<span class="hljs-comment"># 处理跨域  【注意】cors二选一，一般选择 cors</span>
+  <span class="hljs-attr">corsFilter:</span> <span class="hljs-literal">true</span>
+</code></pre>
+<h5 id="14-项目pom的特殊配置">1.4 项目pom的特殊配置</h5>
+<pre><code>    &lt;build&gt;
+        &lt;finalName&gt;${project.name}&lt;/finalName&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.8.1&lt;/version&gt;
+                &lt;configuration&gt;
+                    &lt;source&gt;1.8&lt;/source&gt;
+                    &lt;target&gt;1.8&lt;/target&gt;
+                    &lt;encoding&gt;UTF-8&lt;/encoding&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+                &lt;configuration&gt;
+                    &lt;mainClass&gt;com.na.NAServiceApplication&lt;/mainClass&gt;
+                &lt;/configuration&gt;
+                &lt;executions&gt;
+                    &lt;execution&gt;
+                        &lt;id&gt;repackage&lt;/id&gt;
+                        &lt;goals&gt;
+                            &lt;goal&gt;repackage&lt;/goal&gt;
+                        &lt;/goals&gt;
+                    &lt;/execution&gt;
+                &lt;/executions&gt;
+            &lt;/plugin&gt;
+
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+                &lt;version&gt;2.5.5&lt;/version&gt;
+                &lt;configuration&gt;
+                    &lt;!-- 包含systemPath指定的依赖 --&gt;
+                    &lt;includeSystemScope&gt;true&lt;/includeSystemScope&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+        &lt;resources&gt;
+            &lt;resource&gt;
+                &lt;directory&gt;src/main/java&lt;/directory&gt;
+                &lt;includes&gt;
+                    &lt;include&gt;**/*.xml&lt;/include&gt;
+                &lt;/includes&gt;
+            &lt;/resource&gt;
+            &lt;resource&gt;
+                &lt;directory&gt;src/main/resources&lt;/directory&gt;
+                &lt;includes&gt;
+                    &lt;include&gt;**/*&lt;/include&gt;
+                &lt;/includes&gt;
+                &lt;filtering&gt;true&lt;/filtering&gt;
+            &lt;/resource&gt;
+        &lt;/resources&gt;
+    &lt;/build&gt;
+</code></pre>
+<h5 id="15-在使用bootstrapyaml名称的配置文件时可能需要引入以下依赖">1.5 在使用bootstrap.yaml名称的配置文件时可能需要引入以下依赖</h5>
+<pre><code>    &lt;dependency&gt;
+        &lt;groupId&gt;org.yaml&lt;/groupId&gt;
+        &lt;artifactId&gt;snakeyaml&lt;/artifactId&gt;
+        &lt;version&gt;1.28&lt;/version&gt;
+        &lt;scope&gt;provided&lt;/scope&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-cloud-starter-bootstrap&lt;/artifactId&gt;
+        &lt;version&gt;3.0.4&lt;/version&gt;
+        &lt;scope&gt;provided&lt;/scope&gt;
+    &lt;/dependency&gt;
+</code></pre>
+<h4 id="2-使用">2 使用</h4>
+<pre><code>启动类上使用 @EnableNA
+如果只引入 swagger 只使用 @EnableSwagger2WebMvc
+</code></pre>
+<h5 id="21-swagger配置">2.1 swagger配置</h5>
+<pre><code>na:
+  swagger:
+# 默认为 true，false则不启用
+    enabled: true
+    description: &quot;NA平台&quot;
+# 单体是必填
+    package: &quot;com.na&quot;
+    title: &quot;NA平台&quot;
+    termsOfServiceUrl: &quot;http://www.naXXX.com&quot;
+    license: &quot;NA平台&quot;
+    licenseUrl: &quot;http://www.naXXX.com&quot;
+    version: &quot;1.0.0&quot;
+    contact:
+      name: na
+      email: na_tool@163.com
+      url: https://www.naXXX.com
+</code></pre>
+<pre><code class="language-java"><span class="hljs-meta">@Configuration</span>
+<span class="hljs-meta">@ConditionalOnProperty(name = &quot;na.swagger.group&quot;, matchIfMissing = false)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MySwaggerConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">GlobalSwaggerConfiguration</span> {
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> AutoGlobalSwaggerConfig autoGlobalSwaggerConfig;
+
+
+    <span class="hljs-meta">@Bean(&quot;auth&quot;)</span>
+    <span class="hljs-keyword">public</span> Docket <span class="hljs-title function_">authDocket</span><span class="hljs-params">()</span>
+    {
+        <span class="hljs-keyword">if</span> (!autoGlobalSwaggerConfig.getEnabled()) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
+        }
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2)
+                .groupName(<span class="hljs-string">&quot;auth&quot;</span>)
+                .apiInfo(groupApiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage(<span class="hljs-string">&quot;com.na.controller.auth&quot;</span>))
+                .paths(PathSelectors.any())
+                .build()
+                .globalResponseMessage(RequestMethod.GET,responseMessages())
+                .globalResponseMessage(RequestMethod.POST,responseMessages())
+                .globalResponseMessage(RequestMethod.PUT,responseMessages())
+                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
+                .securityContexts(Lists.newArrayList(securityContext()))
+                .securitySchemes(Lists.&lt;SecurityScheme&gt;newArrayList(apiKey()));
+    }
+
+    <span class="hljs-meta">@Bean(&quot;platform&quot;)</span>
+    <span class="hljs-keyword">public</span> Docket <span class="hljs-title function_">platformDocket</span><span class="hljs-params">()</span>
+    {
+        <span class="hljs-keyword">if</span> (!autoGlobalSwaggerConfig.getEnabled()) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
+        }
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2)
+                .groupName(<span class="hljs-string">&quot;platform&quot;</span>)
+                .apiInfo(groupApiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage(<span class="hljs-string">&quot;com.na.controller.platform&quot;</span>))
+                .paths(PathSelectors.any())
+                .build()
+                .globalResponseMessage(RequestMethod.GET,responseMessages())
+                .globalResponseMessage(RequestMethod.POST,responseMessages())
+                .globalResponseMessage(RequestMethod.PUT,responseMessages())
+                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
+                .securityContexts(Lists.newArrayList(securityContext()))
+                .securitySchemes(Lists.&lt;SecurityScheme&gt;newArrayList(apiKey()));
+    }
+
+    <span class="hljs-meta">@Bean(&quot;merchant&quot;)</span>
+    <span class="hljs-keyword">public</span> Docket <span class="hljs-title function_">merchantDocket</span><span class="hljs-params">()</span>
+    {
+        <span class="hljs-keyword">if</span> (!autoGlobalSwaggerConfig.getEnabled()) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
+        }
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2)
+                .groupName(<span class="hljs-string">&quot;merchant&quot;</span>)
+                .apiInfo(groupApiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage(<span class="hljs-string">&quot;com.na.controller.merchant&quot;</span>))
+                .paths(PathSelectors.any())
+                .build()
+                .globalResponseMessage(RequestMethod.GET,responseMessages())
+                .globalResponseMessage(RequestMethod.POST,responseMessages())
+                .globalResponseMessage(RequestMethod.PUT,responseMessages())
+                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
+                .securityContexts(Lists.newArrayList(securityContext()))
+                .securitySchemes(Lists.&lt;SecurityScheme&gt;newArrayList(apiKey()));
+    }
+
+    <span class="hljs-meta">@Bean(&quot;front&quot;)</span>
+    <span class="hljs-keyword">public</span> Docket <span class="hljs-title function_">frontDocket</span><span class="hljs-params">()</span>
+    {
+        <span class="hljs-keyword">if</span> (!autoGlobalSwaggerConfig.getEnabled()) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
+        }
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2)
+                .groupName(<span class="hljs-string">&quot;front&quot;</span>)
+                .apiInfo(groupApiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage(<span class="hljs-string">&quot;com.na.controller.front&quot;</span>))
+                .paths(PathSelectors.any())
+                .build()
+                .globalResponseMessage(RequestMethod.GET,responseMessages())
+                .globalResponseMessage(RequestMethod.POST,responseMessages())
+                .globalResponseMessage(RequestMethod.PUT,responseMessages())
+                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
+                .securityContexts(Lists.newArrayList(securityContext()))
+                .securitySchemes(Lists.&lt;SecurityScheme&gt;newArrayList(apiKey()));
+    }
+
+    <span class="hljs-meta">@Bean(&quot;common&quot;)</span>
+    <span class="hljs-keyword">public</span> Docket <span class="hljs-title function_">commonDocket</span><span class="hljs-params">()</span>
+    {
+        <span class="hljs-keyword">if</span> (!autoGlobalSwaggerConfig.getEnabled()) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
+        }
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Docket</span>(DocumentationType.SWAGGER_2)
+                .groupName(<span class="hljs-string">&quot;common&quot;</span>)
+                .apiInfo(groupApiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage(<span class="hljs-string">&quot;com.na.controller.common&quot;</span>))
+                .paths(PathSelectors.any())
+                .build()
+                .globalResponseMessage(RequestMethod.GET,responseMessages())
+                .globalResponseMessage(RequestMethod.POST,responseMessages())
+                .globalResponseMessage(RequestMethod.PUT,responseMessages())
+                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
+                .securityContexts(Lists.newArrayList(securityContext()))
+                .securitySchemes(Lists.&lt;SecurityScheme&gt;newArrayList(apiKey()));
+    }
+}
+
+</code></pre>
+<h5 id="22-重点如果使用网关则下面的单体项目使用common模块需要配置如下如果不关闭则会显示多次跨域因为网关已经配置了允许跨域">2.2 【重点】：如果使用网关，则下面的单体项目使用common模块需要配置如下,如果不关闭则会显示多次跨域，因为网关已经配置了允许跨域</h5>
+<pre><code>使用哪个跨域 关闭哪个跨域
+na:
+  cors: false
+</code></pre>
+<h5 id="23-网关单独使用日志配置">2.3 网关单独使用日志配置</h5>
+<pre><code>在resources目录下添加 logback-spring.xml 文件
+配置内容如下
+
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;log.path&quot; source=&quot;logging.path&quot; defaultValue=&quot;logs&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;spring.application.name&quot; source=&quot;spring.application.name&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;spring.profiles.active&quot; source=&quot;spring.profiles.active&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;common-pattern&quot; source=&quot;logging.common-pattern&quot;
+                    defaultValue=&quot;%d{yyyy-MM-dd HH:mm:ss.SSS}:[%5p] [%t:%r] [%logger{50}.%M:%L] --&gt; %msg%n&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;log.level.console&quot; source=&quot;logging.level.console&quot; defaultValue=&quot;INFO&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;log.level.controller&quot; source=&quot;logging.level.controller&quot; defaultValue=&quot;INFO&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;log.level.service&quot; source=&quot;logging.level.service&quot; defaultValue=&quot;INFO&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;log.level.dao&quot; source=&quot;logging.level.sql&quot; defaultValue=&quot;DEBUG&quot;/&gt;
+    &lt;springProperty scope=&quot;context&quot; name=&quot;log.level.nacos&quot; source=&quot;logging.level.nacos&quot; defaultValue=&quot;WARN&quot;/&gt;
+
+    &lt;contextName&gt;${spring.application.name}-logback&lt;/contextName&gt;
+
+    &lt;include resource=&quot;org/springframework/boot/logging/logback/defaults.xml&quot;/&gt;
+    &lt;jmxConfigurator/&gt;
+
+    &lt;!-- 控制台实时输出，采用高亮语法，用于开发环境 --&gt;
+    &lt;appender name=&quot;CONSOLE_APPENDER&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot;&gt;
+        &lt;filter class=&quot;ch.qos.logback.classic.filter.ThresholdFilter&quot;&gt;
+            &lt;level&gt;${log.level.console}&lt;/level&gt;
+        &lt;/filter&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%d{yyyy-MM-dd HH:mm:ss.SSS}:[%5p] [%t:%r] [%cyan(%logger{50}).%M:%L] --&gt; %highlight(%msg) %n
+            &lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;!-- 控制台异步实时输出 --&gt;
+    &lt;appender name=&quot;ASYNC_CONSOLE_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 --&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;!-- 更改默认的队列的深度,该值会影响性能.默认值为256 --&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;!-- 添加附加的appender,最多只能添加一个 --&gt;
+        &lt;appender-ref ref=&quot;CONSOLE_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- 整个项目的所有日志， 包括第三方包 --&gt;
+    &lt;appender name=&quot;ROOT_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/root.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;!-- 每天一归档 --&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/root-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_ROOT_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;ROOT_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;appender name=&quot;PROJECT_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/project.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;!-- 每天一归档 --&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/project-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_PROJECT_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;PROJECT_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- 整个项目第三方包下的的日志 --&gt;
+    &lt;appender name=&quot;THIRD_PARTY_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/third_party.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;!-- 每天一归档 --&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/third_party-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_THIRD_PARTY_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;THIRD_PARTY_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- service包的日志 --&gt;
+    &lt;appender name=&quot;SERVICE_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/service.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/service-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_SERVICE_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;SERVICE_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- controller 包的日志 --&gt;
+    &lt;appender name=&quot;CONTROLLER_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/controller.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/controller-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_CONTROLLER_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;CONTROLLER_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+
+    &lt;!-- dao层日志，用于打印执行的sql  --&gt;
+    &lt;appender name=&quot;DAO_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/dao.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/dao-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_DAO_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;DAO_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;!-- 共用异常包的日志 --&gt;
+    &lt;appender name=&quot;EXCEPTION_APPENDER&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+        &lt;file&gt;${log.path}/${spring.application.name}/exception.log&lt;/file&gt;
+        &lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy&quot;&gt;
+            &lt;fileNamePattern&gt;${log.path}/${spring.application.name}/%d{yyyy-MM}/exception-%d{yyyy-MM-dd}-%i.log.gz
+            &lt;/fileNamePattern&gt;
+            &lt;!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB --&gt;
+            &lt;maxFileSize&gt;100MB&lt;/maxFileSize&gt;
+            &lt;maxHistory&gt;30&lt;/maxHistory&gt;
+            &lt;totalSizeCap&gt;10GB&lt;/totalSizeCap&gt;
+        &lt;/rollingPolicy&gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;${common-pattern}&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+    &lt;appender name=&quot;ASYNC_EXCEPTION_APPENDER&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+        &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+        &lt;queueSize&gt;256&lt;/queueSize&gt;
+        &lt;appender-ref ref=&quot;EXCEPTION_APPENDER&quot;/&gt;
+    &lt;/appender&gt;
+
+    &lt;logger name=&quot;com.na.controller&quot; additivity=&quot;true&quot;
+            level=&quot;${log.level.controller}&quot;&gt;
+        &lt;appender-ref ref=&quot;CONTROLLER_APPENDER&quot;/&gt;
+    &lt;/logger&gt;
+    &lt;logger name=&quot;com.na.service&quot; additivity=&quot;true&quot;
+            level=&quot;${log.level.service}&quot;&gt;
+        &lt;appender-ref ref=&quot;SERVICE_APPENDER&quot;/&gt;
+    &lt;/logger&gt;
+
+    &lt;root level=&quot;${log.level.console}&quot;&gt;
+        &lt;appender-ref ref=&quot;CONSOLE_APPENDER&quot;/&gt;
+        &lt;appender-ref ref=&quot;ROOT_APPENDER&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h5 id="24-自定义返回结果-可能需要">2.4 自定义返回结果 可能需要</h5>
+<pre><code class="language-java"><span class="hljs-meta">@ApiModel</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">R</span>&lt;T&gt; <span class="hljs-keyword">extends</span> <span class="hljs-title class_">NaResult</span>&lt;T&gt; {
+    <span class="hljs-keyword">public</span> <span class="hljs-title function_">R</span><span class="hljs-params">()</span> {
+        <span class="hljs-built_in">super</span>();
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title function_">R</span><span class="hljs-params">(Integer code, String msg)</span> {
+        <span class="hljs-built_in">super</span>(code, msg);
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-title function_">R</span><span class="hljs-params">(Integer code, String msg, T data)</span> {
+        <span class="hljs-built_in">super</span>(code, msg, data);
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> &lt;T&gt; R&lt;T&gt; <span class="hljs-title function_">success</span><span class="hljs-params">(T data)</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">R</span>&lt;&gt;(NaStatus.SUCCESS.getCode(), NaStatus.SUCCESS.getMsg(), data);
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> &lt;T&gt; R&lt;T&gt; <span class="hljs-title function_">successNotMsg</span><span class="hljs-params">(T data)</span> {
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">R</span>&lt;&gt;(NaStatus.DEFAULT.getCode(), <span class="hljs-literal">null</span>, data);
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> R <span class="hljs-title function_">error</span><span class="hljs-params">(StatusEnum status)</span>{
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">R</span>(status.getCode(), status.getMsg());
+    }
+}
+
+
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> <span class="hljs-title class_">StatusEnum</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">INaStatusProvider</span> {
+    DEFAULT(<span class="hljs-number">0</span>, <span class="hljs-string">&quot;default&quot;</span>, <span class="hljs-string">&quot;默认&quot;</span>),
+    ERROR(-<span class="hljs-number">1</span>, <span class="hljs-string">&quot;error&quot;</span>, <span class="hljs-string">&quot;失败&quot;</span>),
+    EXCEPTION(-<span class="hljs-number">2</span>, <span class="hljs-string">&quot;exception&quot;</span>, <span class="hljs-string">&quot;异常&quot;</span>),
+    SUCCESS(<span class="hljs-number">1</span>, <span class="hljs-string">&quot;success&quot;</span>, <span class="hljs-string">&quot;成功&quot;</span>),
+    TEST(<span class="hljs-number">999</span>, <span class="hljs-string">&quot;test&quot;</span>, <span class="hljs-string">&quot; 测试&quot;</span>),
+
+    ;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Integer code;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String enMsg;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String zhMsg;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-title function_">StatusEnum</span><span class="hljs-params">(Integer code, String enMsg, String zhMsg)</span> {
+        <span class="hljs-built_in">this</span>.code = code;
+        <span class="hljs-built_in">this</span>.enMsg = enMsg;
+        <span class="hljs-built_in">this</span>.zhMsg = zhMsg;
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> Integer <span class="hljs-title function_">getCode</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> code;
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getEnMsg</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> enMsg;
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getZhMsg</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> zhMsg;
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getMsg</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">if</span> (Locale.SIMPLIFIED_CHINESE.getLanguage().equals(LocaleContextHolder.getLocale().getLanguage())) {
+            <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>.zhMsg;
+        } <span class="hljs-keyword">else</span> {
+            <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>.enMsg;
+        }
+    }
+}
+</code></pre>
+<h5 id="25-监听redis失效消息">2.5 监听redis失效消息</h5>
+<pre><code>@Component
+public class RedisMessageListener implements RedisKeyExpirationService {
+    @Override
+    public void run(String message, byte[] pattern) throws Exception {
+        System.out.println(&quot;RedisMessageListener:&quot; + message);
+    }
+}
+</code></pre>
+<h3 id="有可能需要的配置">有可能需要的配置</h3>
+<pre><code>import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UndertowSessionConfig implements WebServerFactoryCustomizer&lt;UndertowServletWebServerFactory&gt; {
+    @Override
+    public void customize(UndertowServletWebServerFactory factory) {
+        factory.addDeploymentInfoCustomizers(deploymentInfo -&gt; {
+            deploymentInfo.setSessionPersistenceManager(null); // 禁用持久化会话（根据需求启用/禁用）
+        });
+    }
+}
+</code></pre>
+<h3 id="统一utf-8-可能需要配置">统一UTF-8 可能需要配置</h3>
+<pre><code>import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.AbstractHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+@Configuration
+public class MyWebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void configureMessageConverters(List&lt;HttpMessageConverter&lt;?&gt;&gt; converters) {
+        // 配置默认消息转换器的编码为 UTF-8
+        for (HttpMessageConverter&lt;?&gt; converter : converters) {
+            if (converter instanceof AbstractHttpMessageConverter) {
+                ((AbstractHttpMessageConverter&lt;?&gt;) converter).setDefaultCharset(StandardCharsets.UTF_8);
+            }
+        }
+    }
+}
+</code></pre>
+<pre><code class="language-text">【本版本发布时间为 2025-06-20  适配jdk版本为 1.8】
+</code></pre>
+<h4 id="3-使用说明">3 使用说明</h4>
+<h5 id="31-其他项目使用本项目应在启动类上进行配置">3.1 其他项目使用本项目应在启动类上进行配置</h5>
+<pre><code class="language-java"><span class="hljs-meta">@EnableNA</span>
+<span class="hljs-meta">@ComponentScan(basePackages = {&quot;com.na&quot;, &quot;com.ziji.baoming&quot;})</span> <span class="hljs-comment">// 扫描多个包路径</span>
+</code></pre>
+<h5 id="32-base的使用">3.2 base的使用</h5>
+<pre><code class="language-text">1. controller继承 NaBaseController 即可对分页进行判断
+    if(NaStatus.SUCCESS != checkPageParams(pagingVO.getCurrentPage(), pagingVO.getCurrentPage())){
+        return R.error(StatusEnum.ERROR);
+        }
+
+2. 分页请求对象需要继承NaBasePagesParam 获得分页功能
+
+3. 实体继承NaBaseEntity 获得字符串主键 需要自己输入功能
+
+4. 获取分页相应数据NaBasePagesDomain
+
+    service层的使用
+    List&lt;XXVO&gt; list = new ArrayList&lt;&gt;();
+    IPage&lt;XXModel&gt; modelIPage = service.queryPaging(params);
+    return NaResult.successNotMsg(NaBasePagesDomain.pages(modelIPage, list));
+    
+    repo层的使用
+    Page&lt;XXEntity&gt; page = new Page&lt;&gt;(params.getCurrentPage(), params.getPageSize());
+    IPage&lt;XXEntity&gt; iPage =  baseMapper.queryPaging(page, params);
+    if(iPage != null &amp;&amp; CollectionUtils.isNotEmpty(iPage.getRecords()))
+    {
+       return NaBasePagesDomain.iPages(iPage, NaObjConversionUtil.copyPropertiesList(iPage.getRecords(), XXModel.class));
+    }
+    return NaBasePagesDomain.iPages(iPage,new ArrayList&lt;&gt;());
+</code></pre>
+<h5 id="33-nacachetemplate缓存的使用">3.3 NaCacheTemplate缓存的使用</h5>
+<pre><code class="language-text">1. 需要进行配置，参考1.3 配置
+    建议配置 na.redis , na.redissonClient
+
+/**
+ * 删除指定缓存键
+ * @param key 缓存键
+ */
+public static void clear(String key)
+
+/**
+ * 删除所有以 prefix 开头的缓存键
+ * @param prefix 键前缀
+ */
+public static void clearByPrefix(String prefix)
+
+/**
+ * 删除所有包含特定字符串的缓存键
+ * @param pattern 键模式
+ */
+public static void clearKeysWithPattern(String pattern)
+
+/**
+ * 存储对象为 JSON 字符串到 Redis 缓存（无过期时间）
+ * @param key 缓存键
+ * @param obj 缓存对象
+ * @param &lt;T&gt; 对象类型
+ */
+public static &lt;T&gt; void setCache(String key, T obj)
+
+/**
+ * 存储对象为 JSON 字符串到 Redis 缓存，并设置过期时间
+ * @param key 缓存键
+ * @param obj 缓存对象
+ * @param time 过期时间
+ * @param timeUnit 时间单位
+ * @param &lt;T&gt; 对象类型
+ */
+public static &lt;T&gt; void setCache(String key, T obj, Long time, TimeUnit timeUnit)
+
+/**
+ * 获取缓存中的字符串值
+ * @param key 缓存键
+ * @return JSON字符串，找不到返回 null
+ */
+public static String getCache(String key)
+
+/**
+ * 获取指定类型的缓存对象
+ * @param key 缓存键
+ * @param tClass 目标类型 Class
+ * @param &lt;T&gt; 泛型类型
+ * @return 目标类型对象，找不到或解析失败返回 null
+ */
+public static &lt;T&gt; T getCache(String key, Class&lt;T&gt; tClass)
+
+/**
+ * 获取指定类型缓存，如果不存在则调用回调函数获取数据
+ * @param key 缓存键
+ * @param tClass 目标类型 Class
+ * @param function 缓存未命中时调用的函数
+ * @param &lt;T&gt; 泛型类型
+ * @return 缓存数据或回调结果
+ */
+public static &lt;T&gt; T getCache(String key, Class&lt;T&gt; tClass, Supplier&lt;T&gt; function)
+
+/**
+ * 获取缓存中的列表数据，转换为指定元素类型的 List
+ * @param key 缓存键
+ * @param tClass 列表元素类型
+ * @param &lt;T&gt; 元素类型
+ * @return 列表对象，缓存无数据返回空列表
+ */
+public static &lt;T&gt; List&lt;T&gt; getCacheList(String key, Class&lt;T&gt; tClass)
+
+/**
+ * 获取缓存中的 Set 类型数据，转换为指定元素类型的 Set
+ * @param key 缓存键
+ * @param clazz 元素类型
+ * @param &lt;T&gt; 元素类型
+ * @return Set 对象，缓存无数据返回 null
+ */
+public static &lt;T&gt; Set&lt;T&gt; getCacheSet(String key, Class&lt;T&gt; clazz)
+
+/**
+ * 获取指定类型缓存（集合），未命中时调用函数，返回元素类型为 B 的 List
+ * @param key 缓存键
+ * @param tClass 缓存中数据的原始类型（如 List.class）
+ * @param function 缓存未命中时调用函数
+ * @param itemClass 列表中元素的目标类型
+ * @param &lt;T&gt; 缓存原始类型
+ * @param &lt;B&gt; 列表元素类型
+ * @return 转换后的 List&lt;B&gt;
+ */
+public static &lt;T,B&gt; List&lt;B&gt; getCacheList(String key, Class&lt;T&gt; tClass, Supplier&lt;T&gt; function, Class&lt;B&gt; itemClass)
+
+/**
+ * 获取指定类型缓存（集合），未命中时调用函数，返回元素类型为 B 的 Set
+ * @param key 缓存键
+ * @param tClass 缓存中数据的原始类型
+ * @param function 缓存未命中时调用函数
+ * @param itemClass 集合元素类型
+ * @param &lt;T&gt; 缓存原始类型
+ * @param &lt;B&gt; 集合元素类型
+ * @return 转换后的 Set&lt;B&gt;
+ */
+public static &lt;T,B&gt; Set&lt;B&gt; getCacheSet(String key, Class&lt;T&gt; tClass, Supplier&lt;T&gt; function, Class&lt;B&gt; itemClass)
+
+/**
+ * 获取指定类型缓存（集合），未命中时调用函数，返回元素类型为 B 的双端队列 Deque
+ * @param key 缓存键
+ * @param tClass 缓存原始类型（如 List.class）
+ * @param function 缓存未命中时调用函数
+ * @param itemClass 队列元素类型
+ * @param &lt;T&gt; 缓存原始类型
+ * @param &lt;B&gt; 队列元素类型
+ * @return 转换后的 Deque&lt;B&gt;
+ */
+public static &lt;T,B&gt; Deque&lt;B&gt; getCacheDeque(String key, Class&lt;T&gt; tClass, Supplier&lt;T&gt; function, Class&lt;B&gt; itemClass)
+
+/**
+ * 获取缓存键剩余过期时间，单位毫秒
+ * @param key 缓存键
+ * @return 剩余过期时间（毫秒），-1 表示无过期时间，null 表示不存在
+ */
+public static Long getRemainingExpireTime(String key)
+
+/**
+ * 判断缓存键是否存在
+ * @param key 缓存键
+ * @return true 存在，false 不存在
+ */
+public static boolean exists(String key)
+
+/**
+ * Redis Hash 中写入单个键值对
+ * @param key Redis 键
+ * @param item Hash 字段名
+ * @param value 字段值
+ * @return 是否成功
+ */
+public static boolean hset(String key, String item, Object value)
+
+/**
+ * Redis Hash 中写入单个键值对，并设置键过期时间
+ * @param key Redis 键
+ * @param item Hash 字段名
+ * @param value 字段值
+ * @param time 过期时间（秒）
+ * @return 是否成功
+ */
+public static boolean hset(String key, String item, Object value, long time)
+
+/**
+ * 设置 Redis 键的过期时间（秒）
+ * @param key Redis 键
+ * @param time 过期时间（秒）
+ * @return 是否成功
+ */
+public static boolean expire(String key, long time)
+
+/**
+ * 获取 Redis Hash 中字段数量
+ * @param key Redis 键
+ * @return 字段数量，key 不存在返回 0，异常返回 null
+ */
+public static Long getHashSize(String key)
+
+/**
+ * 获取 Redis Hash 中指定字段的值
+ * @param key Redis 键（非空）
+ * @param item Hash 字段（非空）
+ * @return 字段值，异常或无效参数返回 null
+ */
+public static Object hget(String key, String item)
+
+/**
+ * 尝试获取分布式锁
+ * @param lockKey 锁键
+ * @param timeout 锁有效时间
+ * @param unit 时间单位
+ * @return 是否成功获取锁
+ */
+public static boolean tryLock(String lockKey, long timeout, TimeUnit unit)
+
+/**
+ * 扫描符合 keyPattern 的 Redis Hash 数据，并转换为目标类型列表
+ * @param keyPattern Redis 键匹配模式
+ * @param scanCount 扫描数量建议
+ * @param targetType 目标类型 Class
+ * @param &lt;T&gt; 目标类型泛型
+ * @return 转换后的列表
+ */
+public static &lt;T&gt; List&lt;T&gt; scanRedisHashData(String keyPattern, int scanCount, Class&lt;T&gt; targetType)
+
+/**
+ * 批量写入 Map&lt;String, T&gt; 到 Redis Hash，并设置统一过期时间
+ * @param dataMap 键值对 Map，key 为 Redis 键，value 为对应对象
+ * @param targetType 对象类型
+ * @param expireTime 过期时间（秒），可为空
+ * @param &lt;T&gt; 对象类型泛型
+ */
+public static &lt;T&gt; void batchSaveAsRedisHash(Map&lt;String, T&gt; dataMap, Class&lt;T&gt; targetType, Long expireTime)
+
+
+</code></pre>
+<h5 id="34-监听redis缓存的使用">3.4 监听redis缓存的使用</h5>
+<pre><code class="language-text">1. 需要进行配置 na.redisListener , na.redisMessage
+直接实现 INaRedisKeyExpirationService
+
+</code></pre>
+<h5 id="34-静态常量的使用">3.4 静态常量的使用</h5>
+<pre><code class="language-text">INaGlobalConst和NaConst
+</code></pre>
+<h5 id="35-其他配置参考-13">3.5 其他配置参考 1.3</h5>
+<pre><code class="language-text">
+</code></pre>
+<h5 id="36-异常处理">3.6 异常处理</h5>
+<pre><code class="language-text">1. 可以关闭全局异常处理，默认开启
+na:
+    api:
+        exception:
+                handler: false
+
+2. 可以抛的异常
+    NaBusinessException，403的NaForbiddenException，401的NaUnauthorizedException
+</code></pre>
+<h5 id="37-返回结果处理参考-24-自定义返回结果-可能需要">3.7 返回结果处理，参考 2.4 自定义返回结果 可能需要</h5>
+<pre><code class="language-text">
+</code></pre>
+<h5 id="38-工具类的使用">3.8 工具类的使用</h5>
+<pre><code class="language-text">1. 获取IP  NaAddressUtil 或 NaIpParseUtil（依赖三方）
+2. 公共的  NaCommonUtil
+3. 时间的 NaDateTimeUtil
+4. 文件读取的  NaFileReadUtil
+5. 文件路径或图片（含网络）资源处理  NaFileUtil
+6. ID的 NaIDUtil
+7. token NaJwtUtil
+8. 对象互相转换 NaObjConversionUtil
+9. 二维码  NaQrCodeUtil
+10. API远程调用 NaRestTemplateUtil
+11.获取bean容器上下文  NaSpringContextUtil
+12. 树状结构
+    例如：
+        Long 指定主键和parentId类型
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Builder
+        public class ResMenuTreeVO implements Serializable, NaTreeNode&lt;Long&gt; {
+            private Long id;
+            private String menuName;
+            private Long parentId;
+            private String parentName;
+            private Integer orderNum;
+            private String path;
+            private String component;
+            private String query;
+            private Integer isFrame;
+            private Integer isCache;
+            private String menuType;
+            private String visible;
+            private String status;
+            private String requestUri;
+            private String perms;
+            private String icon;
+            private String sysMenuType;
+            private String remark;
+            private Integer isDel;
+            private List&lt;ResMenuTreeVO&gt; children;
+        
+            @Override
+            public void setChildren(List&lt;? extends NaTreeNode&lt;Long&gt;&gt; children) {
+                this.children = (List&lt;ResMenuTreeVO&gt;) children;
+            }
+        }
+        
+        0L 为 parentId的类型和值，获取顶层数据用
+        List&lt;ResMenuTreeVO&gt; menuTree = NaTreeUtil.toTree(list,0L);
+        
+13. excel导入
+    例如:
+        @Data
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public class CityImport {
+            @NaExcelImportColumn(index = 0, name = &quot;序号&quot;)
+            private Integer id;
+        
+            @NaExcelImportColumn(index = 1, name = &quot;名称&quot;)
+            private String name;
+        
+            @NaExcelImportColumn(index = 2, name = &quot;编码&quot;)
+            private String code;
+        }
+        
+            public static void main(String[] args) {
+        MultipartFile file = null ;
+        NaExcelImportResultUtil&lt;CityImport&gt; result = NaExcelImportResultUtil.getList(CityImport.class, file);
+
+        List&lt;CityImport&gt; data = result.getData();
+        List&lt;String&gt; errors = result.getErrorMessages();
+
+        // 可根据情况返回解析结果
+        if (!errors.isEmpty()) {
+            System.out.println(&quot;导入失败！&quot;);
+        }
+
+        // 成功导入的处理，比如入库
+        data.forEach(System.out::println); // 这里只是打印
+    }
+
+
+14. excel导出
+    例如:
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public class UserExport {
+            @NaExcelExportColumn(headerName = &quot;用户ID&quot;, order = 1)
+            private Long id;
+        
+            @NaExcelExportColumn(headerName = &quot;用户名&quot;, order = 2)
+            private String name;
+        
+            @NaExcelExportColumn(headerName = &quot;注册时间（Date）&quot;, order = 3, dateFormat = &quot;yyyy-MM-dd HH:mm:ss&quot;)
+            private Date registerTime;
+        
+            @NaExcelExportColumn(headerName = &quot;最后登录（LocalDateTime）&quot;, order = 4, dateFormat = &quot;yyyy-MM-dd HH:mm:ss&quot;)
+            private LocalDateTime lastLogin;
+            
+        }
+        
+        List&lt;UserExport&gt; list = service.queryAll();
+        NaExcelExportResultUtil.download(response,
+                list, UserExport.class,0,&quot;全部人员&quot;);
+                
+                NaExcelExportResultUtil.download(list, UserExport.class,0,&quot;D:/导出数据.xlsx&quot;);
+
+15. 日志的使用
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration&gt;
+    &lt;!--引入pd-tools-log模块中提供的日志的基础配置--&gt;
+    &lt;include resource=&quot;com/na/log/config/na-defaults.xml&quot;/&gt;
+
+    &lt;springProfile name=&quot;test,docker,prod&quot;&gt;
+        &lt;logger name=&quot;com.na.controller&quot; additivity=&quot;true&quot;
+                level=&quot;${log.level.controller}&quot;&gt;
+            &lt;appender-ref ref=&quot;ASYNC_CONTROLLER_APPENDER&quot;/&gt;
+        &lt;/logger&gt;
+        &lt;logger name=&quot;com.na.service&quot; additivity=&quot;true&quot;
+                level=&quot;${log.level.service}&quot;&gt;
+            &lt;appender-ref ref=&quot;ASYNC_SERVICE_APPENDER&quot;/&gt;
+        &lt;/logger&gt;
+    &lt;/springProfile&gt;
+
+    &lt;springProfile name=&quot;dev&quot;&gt;
+        &lt;logger name=&quot;com.na.controller&quot; additivity=&quot;true&quot;
+                level=&quot;${log.level.controller}&quot;&gt;
+            &lt;appender-ref ref=&quot;CONTROLLER_APPENDER&quot;/&gt;
+        &lt;/logger&gt;
+        &lt;logger name=&quot;com.na.service&quot; additivity=&quot;true&quot;
+                level=&quot;${log.level.service}&quot;&gt;
+            &lt;appender-ref ref=&quot;SERVICE_APPENDER&quot;/&gt;
+        &lt;/logger&gt;
+    &lt;/springProfile&gt;
+&lt;/configuration&gt;
+
+16. 国际化配置na.i18n
+    na.staticWebSource默认即可，如果为true。防止静态资源会被拦截，导致访问不到静态资源
+    
+    同时需要实现INaLanguageService接口，实现语言切换
+        String language = LocaleContextHolder.getLocale().getLanguage();
+            if(language.equals(Locale.SIMPLIFIED_CHINESE.getLanguage())){
+                NaLocalLangUtil.setLocale(&quot;zh_CN&quot;);
+            }
+    
+    同时需要配置i18n.properties文件，首先在resources目录下，新建i18n文件夹，
+    然后创建messages.properties，messages_en_US.properties，messages_zh_CN.properties等文件
+
+同时配置
+spring:
+    messages:
+        encoding: utf-8
+        basename: i18n/messages
+        cache-duration: 3600s  # 热加载，设置为 -1 表示缓存永不过期
+</code></pre>
+<h1 id="注意启动类配置">【注意】启动类配置</h1>
+<pre><code>如果你的包名不是以com.na开头的，需要配置
+@ComponentScan(basePackages = {&quot;com.na&quot;, &quot;com.ziji.baoming&quot;}) // 扫描多个包路径
+</code></pre>
+
+            <script async src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+            
+        </body>
+        </html>
