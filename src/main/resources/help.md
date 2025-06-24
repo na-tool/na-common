@@ -267,121 +267,46 @@ na:
 ```
 ```java
 @Configuration
-@ConditionalOnProperty(name = "na.swagger.group", matchIfMissing = false)
-public class MySwaggerConfig extends GlobalSwaggerConfiguration {
-    @Autowired
-    private AutoGlobalSwaggerConfig autoGlobalSwaggerConfig;
+@ConditionalOnProperty(name = "na.swagger.group", havingValue = "true")
+public class MySwaggerConfig extends NaSwaggerConfig {
 
+    @Autowired
+    private Environment environment;
 
     @Bean("auth")
     public Docket authDocket()
     {
-        if (!autoGlobalSwaggerConfig.getEnabled()) {
-            return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
-        }
-
-        return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("auth")
-                .apiInfo(groupApiInfo())
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.na.controller.auth"))
-                .paths(PathSelectors.any())
-                .build()
-                .globalResponseMessage(RequestMethod.GET,responseMessages())
-                .globalResponseMessage(RequestMethod.POST,responseMessages())
-                .globalResponseMessage(RequestMethod.PUT,responseMessages())
-                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
-                .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.<SecurityScheme>newArrayList(apiKey()));
-    }
-
-    @Bean("platform")
-    public Docket platformDocket()
-    {
-        if (!autoGlobalSwaggerConfig.getEnabled()) {
-            return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
-        }
-
-        return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("platform")
-                .apiInfo(groupApiInfo())
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.na.controller.platform"))
-                .paths(PathSelectors.any())
-                .build()
-                .globalResponseMessage(RequestMethod.GET,responseMessages())
-                .globalResponseMessage(RequestMethod.POST,responseMessages())
-                .globalResponseMessage(RequestMethod.PUT,responseMessages())
-                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
-                .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.<SecurityScheme>newArrayList(apiKey()));
-    }
-
-    @Bean("merchant")
-    public Docket merchantDocket()
-    {
-        if (!autoGlobalSwaggerConfig.getEnabled()) {
-            return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
-        }
-
-        return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("merchant")
-                .apiInfo(groupApiInfo())
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.na.controller.merchant"))
-                .paths(PathSelectors.any())
-                .build()
-                .globalResponseMessage(RequestMethod.GET,responseMessages())
-                .globalResponseMessage(RequestMethod.POST,responseMessages())
-                .globalResponseMessage(RequestMethod.PUT,responseMessages())
-                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
-                .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.<SecurityScheme>newArrayList(apiKey()));
-    }
-
-    @Bean("front")
-    public Docket frontDocket()
-    {
-        if (!autoGlobalSwaggerConfig.getEnabled()) {
-            return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
-        }
-
-        return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("front")
-                .apiInfo(groupApiInfo())
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.na.controller.front"))
-                .paths(PathSelectors.any())
-                .build()
-                .globalResponseMessage(RequestMethod.GET,responseMessages())
-                .globalResponseMessage(RequestMethod.POST,responseMessages())
-                .globalResponseMessage(RequestMethod.PUT,responseMessages())
-                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
-                .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.<SecurityScheme>newArrayList(apiKey()));
+        return createDocket("auth", "com.na.controller.auth");
     }
 
     @Bean("common")
     public Docket commonDocket()
     {
-        if (!autoGlobalSwaggerConfig.getEnabled()) {
+        return createDocket("common", "com.na.controller.common");
+    }
+    
+
+    private Docket createDocket(String groupName, String basePackage) {
+        boolean swaggerEnabled = Boolean.parseBoolean(environment.getProperty("na.swagger.enabled", "true"));
+        if (!swaggerEnabled) {
             return new Docket(DocumentationType.SWAGGER_2).select().apis(RequestHandlerSelectors.none()).build();
         }
 
         return new Docket(DocumentationType.SWAGGER_2)
-                .groupName("common")
+                .groupName(groupName)
                 .apiInfo(groupApiInfo())
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("com.na.controller.common"))
+                .apis(RequestHandlerSelectors.basePackage(basePackage))
                 .paths(PathSelectors.any())
                 .build()
-                .globalResponseMessage(RequestMethod.GET,responseMessages())
-                .globalResponseMessage(RequestMethod.POST,responseMessages())
-                .globalResponseMessage(RequestMethod.PUT,responseMessages())
-                .globalResponseMessage(RequestMethod.DELETE,responseMessages())
+                .globalResponseMessage(RequestMethod.GET, responseMessages())
+                .globalResponseMessage(RequestMethod.POST, responseMessages())
+                .globalResponseMessage(RequestMethod.PUT, responseMessages())
+                .globalResponseMessage(RequestMethod.DELETE, responseMessages())
                 .securityContexts(Lists.newArrayList(securityContext()))
-                .securitySchemes(Lists.<SecurityScheme>newArrayList(apiKey()));
+                .securitySchemes(Lists.newArrayList(apiKey()));
     }
+
 }
 
 ```
