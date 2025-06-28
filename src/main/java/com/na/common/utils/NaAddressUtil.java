@@ -16,21 +16,6 @@ import java.util.Objects;
 @Component
 @Slf4j
 public class NaAddressUtil {
-
-    private static final String[] IP_HEADER_CANDIDATES = {
-            "X-Forwarded-For",
-            "Proxy-Client-IP",
-            "WL-Proxy-Client-IP",
-            "HTTP_X_FORWARDED_FOR",
-            "HTTP_X_FORWARDED",
-            "HTTP_X_CLUSTER_CLIENT_IP",
-            "HTTP_CLIENT_IP",
-            "HTTP_FORWARDED_FOR",
-            "HTTP_FORWARDED",
-            "HTTP_VIA",
-            "REMOTE_ADDR"
-    };
-
     /**
      * 获取用户真实IP地址，不使用request.getRemoteAddr();的原因是有可能用户使用了代理软件方式避免真实IP地址,
      * 可是，如果通过了多级反向代理的话，X-Forwarded-For的值并不止一个，而是一串IP值，究竟哪个才是真正的用户端的真实IP呢？
@@ -45,67 +30,56 @@ public class NaAddressUtil {
      */
     public static String getIpAddress(HttpServletRequest request) {
         if (request == null) {
-            return StringUtils.EMPTY;
+            return "";
         }
 
-        String unknown = "unknown";
-        for (String header : IP_HEADER_CANDIDATES) {
-            String ip = request.getHeader(header);
-            if (ip != null && ip.length() != 0 && !unknown.equalsIgnoreCase(ip)) {
-                // X-Forwarded-For可能返回多个IP地址，取第一个
-                if (header.equalsIgnoreCase("X-Forwarded-For") && ip.contains(",")) {
-                    ip = ip.split(",")[0].trim();
-                }
-                return ip;
-            }
-        }
-
-        return request.getRemoteAddr();
-    }
-
-    /**
-     * 获取ip
-     * @param request request
-     * @return ip
-     */
-    public static String getIp(HttpServletRequest request) {
-        String ipAddress = null;
         try {
-            ipAddress = request.getHeader("x-forwarded-for");
-            if (org.springframework.util.StringUtils.isEmpty(ipAddress) || "unknown".equalsIgnoreCase(ipAddress)) {
-                ipAddress = request.getHeader("Proxy-Client-IP");
-            }
-            if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
-                ipAddress = request.getHeader("WL-Proxy-Client-IP");
-            }
-            if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
-                ipAddress = Objects.requireNonNull(request.getRemoteAddr(),"获取请求者ip地址为null导致抛出异常");
-                if (ipAddress.equals("127.0.0.1")) {
-                    // 根据网卡取本机配置的IP
-                    InetAddress inetAddress = null;
-                    try {
-                        inetAddress = InetAddress.getLocalHost();
-                    } catch (UnknownHostException e) {
-                        throw new UnknownHostException("无法解析本机IP地址");
-                    }
-                    ipAddress = inetAddress.getHostAddress();
+            String ip = null;
+            for (String header : new String[]{
+                    "X-Forwarded-For",
+                    "Proxy-Client-IP",
+                    "WL-Proxy-Client-IP",
+                    "HTTP_X_FORWARDED_FOR",
+                    "HTTP_CLIENT_IP",
+                    "HTTP_FORWARDED_FOR",
+                    "HTTP_FORWARDED",
+                    "HTTP_VIA",
+                    "REMOTE_ADDR"
+            }) {
+                String value = request.getHeader(header);
+                if (value != null && !value.isEmpty() && !"unknown".equalsIgnoreCase(value)) {
+                    ip = value;
+                    break;
                 }
             }
-            // 对于通过多个代理的情况，第一个IP为客户端真实IP,多个IP按照','分割
-            if (ipAddress != null && ipAddress.length() > 15) {
-                // "***.***.***.***".length()
-                // = 15
-                if (ipAddress.indexOf(",") > 0) {
-                    ipAddress = ipAddress.substring(0, ipAddress.indexOf(","));
+
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr();
+            }
+
+            // 多级代理时取第一个 IP
+            if (ip != null && ip.contains(",")) {
+                ip = ip.split(",")[0].trim();
+            }
+
+            // IPv6 本地地址转 IPv4
+            if ("0:0:0:0:0:0:0:1".equals(ip)) {
+                ip = "127.0.0.1";
+            }
+
+            // 进一步处理本地 IP 情况
+            if ("127.0.0.1".equals(ip)) {
+                try {
+                    InetAddress inet = InetAddress.getLocalHost();
+                    ip = inet.getHostAddress();
+                } catch (UnknownHostException ignored) {
                 }
             }
+
+            return ip;
         } catch (Exception e) {
-            log.error("获取IP失败,原因{}",e.getMessage());
-            ipAddress="";
+            log.warn("获取客户端IP异常: {}", e.getMessage());
+            return "";
         }
-        if("0:0:0:0:0:0:0:1".equals(ipAddress)){
-            return "127.0.0.1";
-        }
-        return ipAddress;
     }
 }
