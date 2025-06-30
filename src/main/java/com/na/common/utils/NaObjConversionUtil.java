@@ -1,20 +1,27 @@
 package com.na.common.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.na.common.utils.converter.LocalDateConverter;
 import com.na.common.utils.converter.LocalDateTimeConverter;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.ConvertUtilsBean;
 import org.apache.commons.beanutils.converters.*;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class NaObjConversionUtil {
 
     private static final BeanUtilsBean beanUtils;
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
         ConvertUtilsBean convertUtils = new ConvertUtilsBean();
@@ -67,5 +74,68 @@ public class NaObjConversionUtil {
 
         }
         return targetList;
+    }
+
+    /**
+     * 复制 source 中非 null 且非空字符串的字段到 target
+     */
+    public static <T> void copyNonNullAndNonEmptyFields(T source, T target, Class<T> clazz) {
+        if (source == null || target == null) return;
+
+        Map<String, Object> map = objectMapper.convertValue(source, Map.class);
+
+        // 移除 null 和空字符串字段
+        map = map.entrySet().stream()
+                .filter(e -> {
+                    Object val = e.getValue();
+                    return val != null && (!(val instanceof String) || !((String) val).trim().isEmpty());
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        T filtered = objectMapper.convertValue(map, clazz);
+
+        try {
+            beanUtils.copyProperties(target, filtered);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to copy non-null and non-empty fields", e);
+        }
+    }
+
+    /**
+     * 将 target 中非 null 且非空字符串的字段，赋值给 source 中对应字段，包括继承字段
+     */
+    public static <T> void overwriteNonNullAndNonEmptyFields(T source, T target) {
+        if (source == null || target == null) return;
+
+        List<Field> fields = getAllFields(source.getClass());
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object targetVal = field.get(target);
+                if (targetVal != null) {
+                    if (targetVal instanceof String && ((String) targetVal).trim().isEmpty()) {
+                        continue;
+                    }
+                    field.set(source, targetVal);
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Failed to overwrite field: " + field.getName(), e);
+            }
+        }
+    }
+
+    /**
+     * 获取类及其父类的所有字段
+     */
+    private static List<Field> getAllFields(Class<?> type) {
+        List<Field> fields = new ArrayList<>();
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            Field[] declared = c.getDeclaredFields();
+            for (Field f : declared) {
+                fields.add(f);
+            }
+        }
+        return fields;
     }
 }

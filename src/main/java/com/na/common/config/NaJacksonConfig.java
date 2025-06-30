@@ -1,6 +1,5 @@
 package com.na.common.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.na.common.config.model.NaJacksonModule;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
