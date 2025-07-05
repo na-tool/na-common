@@ -64,6 +64,7 @@ public class NaDateTimeUtil {
 
     /**
      * 显式使用 Asia/Shanghai 时区
+     *
      * @return LocalDateTime
      */
     public static LocalDateTime getCurrentBeijingDateTime() {
@@ -73,6 +74,7 @@ public class NaDateTimeUtil {
 
     /**
      * 显式使用 Asia/Shanghai 时区
+     *
      * @return Date
      */
     public static Date getCurrentBeijingDate() {
@@ -97,9 +99,9 @@ public class NaDateTimeUtil {
      * 将 `Date` 对象转换为字符串。默认使用北京时间（Asia/Shanghai）时区，
      * 如果传入的 `zoneId` 不为 null，则按照指定时区进行转换。
      *
-     * @param date 需要转换的 `Date` 对象
+     * @param date       需要转换的 `Date` 对象
      * @param timeFormat 日期格式，使用 `DateFormat` 枚举。如果为 null，则默认为 `YYYY_MM_DD_HH_mm_ss`
-     * @param zoneId 时区；如果为 null，则使用北京时间（Asia/Shanghai）
+     * @param zoneId     时区；如果为 null，则使用北京时间（Asia/Shanghai）
      * @return 转换后的日期字符串
      */
     public static String parseToString(Date date, DateFormat timeFormat, ZoneId zoneId) {
@@ -133,8 +135,8 @@ public class NaDateTimeUtil {
      * 如果传入的 `zoneId` 不为 null，则按照指定时区进行转换。
      *
      * @param currentDateTime 需要转换的 `LocalDateTime` 对象
-     * @param timeFormat 日期格式，使用 `DateFormat` 枚举。如果为 null，则默认为 `YYYY_MM_DD_HH_mm_ss`
-     * @param zoneId 时区；如果为 null，则使用北京时间（Asia/Shanghai）
+     * @param timeFormat      日期格式，使用 `DateFormat` 枚举。如果为 null，则默认为 `YYYY_MM_DD_HH_mm_ss`
+     * @param zoneId          时区；如果为 null，则使用北京时间（Asia/Shanghai）
      * @return 转换后的日期字符串
      */
     public static String parseToString(LocalDateTime currentDateTime, DateFormat timeFormat, ZoneId zoneId) {
@@ -160,7 +162,7 @@ public class NaDateTimeUtil {
         return currentDateTime.atZone(zoneId).format(dtf);
     }
 
-    public static String parseToString(Long time, DateFormat timeFormat, String zoneIdStr) {
+    public static String parseToString(Long time, DateFormat timeFormat) {
         // 如果当前日期时间为空，返回空字符串
         if (time == null) {
             return StringUtils.EMPTY;
@@ -169,28 +171,42 @@ public class NaDateTimeUtil {
         if (timeFormat == null) {
             timeFormat = DateFormat.SS_CHINESE;
         }
-        ZoneId zoneId;
-        if (StringUtils.isEmpty(zoneIdStr)) {
-            zoneId = ZoneId.of("Asia/Shanghai");
-        }else {
-            zoneId = ZoneId.of(zoneIdStr);
+
+        // 将毫秒转为总秒数（1秒 = 1000毫秒）
+        long totalSeconds = time / 1000;
+
+        // 计算出秒（不足1分钟的部分）
+        long seconds = totalSeconds % 60;
+
+        // 计算出分钟（去掉小时后剩下的部分）
+        long minutes = (totalSeconds / 60) % 60;
+
+        // 计算出小时（总秒数除以3600，即1小时 = 3600秒）
+        long hours = totalSeconds / 3600;
+
+        if (timeFormat.equals(DateFormat.HH_MM_SS)) {
+            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        } else if (timeFormat.equals(DateFormat.HH_MM_SS_CHINESE)) {
+            return String.format("%02d时%02d分%02d秒", hours, minutes, seconds);
+        } else if (timeFormat.equals(DateFormat.HH_MM)) {
+            return String.format("%02d:%02d", hours, minutes);
+        } else if (timeFormat.equals(DateFormat.HH_MM_CHINESE)) {
+            return String.format("%02d时%02d分", hours, minutes);
+        } else if (timeFormat.equals(DateFormat.SS)) {
+            return String.format("%02d", totalSeconds);
+        } else if (timeFormat.equals(DateFormat.SS_CHINESE)) {
+            return String.format("%02d秒", totalSeconds);
         }
-        // 转换时间戳为 ZonedDateTime
-        ZonedDateTime zonedDateTime = Instant.ofEpochMilli(time).atZone(zoneId);
-
-        // 格式化时间
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(timeFormat.getValue());
-
-        return formatter.format(zonedDateTime);
+        return "";
     }
 
     /**
      * 将字符串日期转换为 `Date` 对象。默认使用北京时间（Asia/Shanghai）时区，
      * 如果传入的 `zoneId` 不为 null，则按照指定时区进行转换。
      *
-     * @param date 日期字符串
+     * @param date       日期字符串
      * @param timeFormat 日期格式，使用 `DateFormat` 枚举。如果为 null，则默认为 `YYYY_MM_DD_HH_mm_ss`
-     * @param zoneId 时区；如果为 null，则使用北京时间（Asia/Shanghai）
+     * @param zoneId     时区；如果为 null，则使用北京时间（Asia/Shanghai）
      * @return 转换后的 `Date` 对象，转换失败返回 null
      */
     public static Date parseToDate(String date, DateFormat timeFormat, ZoneId zoneId) {
@@ -232,9 +248,9 @@ public class NaDateTimeUtil {
      * 将日期字符串解析为 LocalDateTime 对象，并根据传入的时区进行转换。
      * 如果传入的时区为 null，则默认使用北京时间（Asia/Shanghai）。
      *
-     * @param date 日期字符串
+     * @param date       日期字符串
      * @param timeFormat 日期字符串的格式
-     * @param zoneId 解析时使用的时区，如果为 null，则使用北京时间（Asia/Shanghai）
+     * @param zoneId     解析时使用的时区，如果为 null，则使用北京时间（Asia/Shanghai）
      * @return 解析后的 LocalDateTime 对象，如果解析失败则返回 null
      */
     public static LocalDateTime parseToLocalDateTime(String date, DateFormat timeFormat, ZoneId zoneId) {
@@ -276,7 +292,7 @@ public class NaDateTimeUtil {
      * 将时间戳（毫秒级）转换为 `Date` 对象。支持秒级时间戳（10位）自动转换为毫秒级（13位）。
      * 如果传入的 `zoneId` 为 `null`，则默认使用北京时间（Asia/Shanghai）。
      *
-     * @param date 时间戳（毫秒级或秒级）
+     * @param date   时间戳（毫秒级或秒级）
      * @param zoneId 时区，如果为 null，则使用北京时间（Asia/Shanghai）
      * @return 转换后的 `Date` 对象，若 `date` 为 null，则返回 null
      */
@@ -341,7 +357,7 @@ public class NaDateTimeUtil {
      * 将指定日期转换为时间戳（毫秒）。
      * 如果提供的时区为 null，则默认为北京时间（Asia/Shanghai）。
      *
-     * @param date    要转换的日期对象
+     * @param date   要转换的日期对象
      * @param zoneId 要使用的时区，如果为 null，则默认为北京时间（Asia/Shanghai）
      * @return 转换后的时间戳（毫秒）
      */
@@ -392,7 +408,7 @@ public class NaDateTimeUtil {
      *
      * @param dateString 需要转换的日期字符串
      * @param timeFormat 日期格式，使用 `DateFormat` 枚举。如果为 null，则默认为 `YYYY_MM_DD_HH_mm_ss`
-     * @param zoneId 时区；如果为 null，则使用北京时间（Asia/Shanghai）
+     * @param zoneId     时区；如果为 null，则使用北京时间（Asia/Shanghai）
      * @return 转换后的时间戳（毫秒）
      */
     public static Long dateToLong(String dateString, DateFormat timeFormat, ZoneId zoneId) {

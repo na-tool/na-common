@@ -78,6 +78,11 @@ public class NaObjConversionUtil {
 
     /**
      * 复制 source 中非 null 且非空字符串的字段到 target
+     *
+     * @param source 源对象
+     * @param target 目标对象
+     * @param clazz 目标对象的类类型
+     * @param <T> 类型参数
      */
     public static <T> void copyNonNullAndNonEmptyFields(T source, T target, Class<T> clazz) {
         if (source == null || target == null) return;
@@ -103,6 +108,10 @@ public class NaObjConversionUtil {
 
     /**
      * 将 target 中非 null 且非空字符串的字段，赋值给 source 中对应字段，包括继承字段
+     *
+     * @param <T> 类型参数，表示对象的类型
+     * @param source 源对象，包含需要复制的字段
+     * @param target 目标对象，字段会被复制到此对象
      */
     public static <T> void overwriteNonNullAndNonEmptyFields(T source, T target) {
         if (source == null || target == null) return;
