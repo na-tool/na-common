@@ -48,6 +48,7 @@ public class NaSwaggerConfiguration extends NaSwaggerConfig{
         }
 
         return new Docket(DocumentationType.SWAGGER_2)
+                .groupName("na-default") // ✅ 加上这句，避免默认值 default
                 .apiInfo(groupApiInfo())
                 .select()
                 .apis(multiplePackagePredicate())
