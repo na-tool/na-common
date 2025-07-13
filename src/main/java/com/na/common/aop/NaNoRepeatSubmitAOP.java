@@ -7,6 +7,7 @@ import com.na.common.constant.INaGlobalConst;
 import com.na.common.exceptions.NaBusinessException;
 import com.na.common.result.enums.NaStatus;
 import com.na.common.utils.NaAddressUtil;
+import com.na.common.utils.NaCommonUtil;
 import com.na.common.utils.NaDateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -48,8 +49,7 @@ public class NaNoRepeatSubmitAOP {
     @Around("pointCut()")
     public Object around(ProceedingJoinPoint pjp) throws Throwable {
         // 获取当前HTTP请求
-        HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(
-                RequestContextHolder.getRequestAttributes())).getRequest();
+        HttpServletRequest request = NaCommonUtil.getCurrentHttpRequest();
 
         // 获取请求的IP地址
         String ip = NaAddressUtil.getIpAddress(request);

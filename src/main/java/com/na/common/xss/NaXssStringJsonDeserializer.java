@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
+import com.na.common.utils.NaCommonUtil;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -37,6 +39,12 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implem
      */
     public static void setConfig(NaAutoXssConfig cfg) {
         config = cfg;
+    }
+
+    private boolean escapeOnly = false; // 标记是否只转义，不替换为空
+
+    public NaXssStringJsonDeserializer(boolean escapeOnly) {
+        this.escapeOnly = escapeOnly;
     }
 
     // 构造器（必须）
@@ -107,7 +115,31 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implem
     public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         String source = p.getText();
         if (StringUtils.isNotBlank(source)) {
-            source = xssScriptReplace(source); // 正则清洗
+            String requestPath = "";
+            HttpServletRequest request = NaCommonUtil.getCurrentHttpRequest();
+            if (request != null) {
+                /**
+                 * 获取真实的请求路径（去除 contextPath）
+                 */
+                requestPath = request.getRequestURI().replaceFirst(request.getContextPath(), "");
+            }
+            if(NaCommonUtil.isExcluded(config.getExcludePaths(),requestPath)){
+                return source;
+            }
+            if (escapeOnly) {
+                /**
+                 * 只转义HTML特殊字符，不删除任何内容
+                 *
+                 * 转义成HTML
+                 * StringEscapeUtils.unescapeHtml4(转以后的字符串)
+                 */
+                return StringEscapeUtils.escapeHtml4(source);
+            } else {
+                /**
+                 * 原有正则替换，替换为" "，防止XSS攻击
+                 */
+                return xssScriptReplace(source);
+            }
         }
         return source;
     }
@@ -136,6 +168,17 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implem
      */
     @Override
     public JsonDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) {
+        if (property != null) {
+            // 判断字段是否有 @NaXssEscapeOnly 注解
+            boolean escapeOnlyFlag = property.getAnnotation(NaXssEscapeOnly.class) != null
+                    // 或者上下文中也有该注解
+                    || property.getContextAnnotation(NaXssEscapeOnly.class) != null;
+
+            // 根据是否有注解创建新的反序列化器实例，并传入标记
+            return new NaXssStringJsonDeserializer(escapeOnlyFlag);
+        }
         return this; // 保持当前实例
     }
+
+
 }

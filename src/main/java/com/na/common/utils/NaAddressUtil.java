@@ -40,10 +40,7 @@ public class NaAddressUtil {
     public static String getIpAddress(HttpServletRequest request) {
         // 若未显式传入 request，则从上下文中尝试获取
         if (request == null) {
-            RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-            if (attrs instanceof ServletRequestAttributes) {
-                request = ((ServletRequestAttributes) attrs).getRequest();
-            }
+            request = NaCommonUtil.getCurrentHttpRequest();
         }
 
         if (request == null) {

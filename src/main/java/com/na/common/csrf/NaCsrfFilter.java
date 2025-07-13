@@ -1,6 +1,7 @@
 package com.na.common.csrf;
 
 import com.alibaba.fastjson.JSONObject;
+import com.na.common.utils.NaCommonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -78,8 +79,11 @@ public class NaCsrfFilter implements Filter {
                 // 去掉上下文路径，得到应用内真实访问路径
                 String cleanPath = requestPath.replaceFirst(req.getContextPath(), "");
 
-                // 判断路径是否在路径白名单中
-                if (!isInPathWhitelist(config.getCsrfWhitePaths(),cleanPath)) {
+                /**
+                 * 支持简单通配符和正则匹配的路径判断
+                 * 判断路径是否在 CSRF 路径白名单中
+                 */
+                if (!NaCommonUtil.isExcluded(config.getCsrfWhitePaths(),cleanPath)) {
                     // 非白名单域名 且 非白名单路径，触发 CSRF 拦截
                     log.warn("[CSRF 拦截] Referer 不可信: {}", referer);
                     log.warn("[CSRF 拦截] 请求地址: {}", req.getRequestURL());
@@ -119,24 +123,6 @@ public class NaCsrfFilter implements Filter {
             response.sendRedirect(request.getContextPath() + "/illegal");
             return "";
         }
-    }
-
-    /**
-     * 支持简单通配符和正则匹配的路径判断
-     * 判断路径是否在 CSRF 路径白名单中
-     */
-    public static Boolean isInPathWhitelist(List<String> requestUris, String requestUri) {
-        for (String uri : requestUris) {
-            // 将 uriPattern 转换为正则表达式
-            String regex = uri.replace("/*", "/[^/]*");
-
-            // 使用 Pattern 进行匹配
-            if (Pattern.matches(regex, requestUri)) {
-                log.debug("[CSRF] 命中路径白名单: {}", requestUri);
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

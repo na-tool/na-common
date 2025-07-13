@@ -1,5 +1,6 @@
 package com.na.common.xss;
 
+import com.na.common.utils.NaCommonUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
@@ -35,29 +36,11 @@ public class NaXssFilter implements Filter {
         String requestUri = httpRequest.getRequestURI();
 
         requestUri = requestUri.replaceFirst(httpRequest.getContextPath(), "");
-        if (isExcluded(excludePaths,requestUri)) {
+        if (NaCommonUtil.isExcluded(excludePaths,requestUri)) {
             chain.doFilter(request, response); // 不包装
         } else {
             chain.doFilter(new NaXssHttpServletRequestWrapper(httpRequest), response);
         }
-    }
-
-    /**
-     * 支持简单通配符和正则匹配的路径判断
-     * 判断路径是否在 xss 路径白名单中
-     */
-    private boolean isExcluded(List<String> requestUris, String requestUri) {
-        for (String uri : requestUris) {
-            // 将 uriPattern 转换为正则表达式
-            String regex = uri.replace("/*", "/[^/]*");
-
-            // 使用 Pattern 进行匹配
-            if (Pattern.matches(regex, requestUri)) {
-                log.debug("[XSS] 命中路径白名单: {}", requestUri);
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override public void init(FilterConfig filterConfig) {}
