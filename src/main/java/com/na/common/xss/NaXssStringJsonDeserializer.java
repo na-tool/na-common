@@ -148,7 +148,7 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implem
         if (value != null) {
             for (String regex : regexList) {
                 Pattern scriptPattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-                value = scriptPattern.matcher(value).replaceAll(" ");
+                value = scriptPattern.matcher(value).replaceAll("");
             }
         }
         return value;
