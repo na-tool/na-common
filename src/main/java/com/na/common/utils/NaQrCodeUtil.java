@@ -15,6 +15,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -106,8 +107,15 @@ public class NaQrCodeUtil {
     public static String createQRCodeWithLogo(String content, int width, int height, String logoPath) throws IOException {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             BufferedImage qrImage = generateQRCodeImage(content, width, height);
-            BufferedImage logo = ImageIO.read(new File(logoPath));
+//            BufferedImage logo = ImageIO.read(new File(logoPath));
 
+            BufferedImage logo;
+            if (NaCommonUtil.ishttp(logoPath)) {
+                URL logoUrl = new URL(logoPath);
+                logo = ImageIO.read(logoUrl);
+            } else {
+                logo = ImageIO.read(new File(logoPath));
+            }
             // 将 logo 嵌入二维码
             insertLogo(qrImage, logo);
 
