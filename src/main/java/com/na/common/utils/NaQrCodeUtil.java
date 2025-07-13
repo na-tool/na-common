@@ -104,9 +104,9 @@ public class NaQrCodeUtil {
      * @return 生成后的二维码 Base64 字符串 （不含 data:image/png;base64 前缀）
      * @throws IOException 生成二维码或读取 logo 文件时出错
      */
-    public static String createQRCodeWithLogo(String content, int width, int height, String logoPath) throws IOException {
+    public static String createQRCodeWithLogo(String content, int width, int height, String logoPath,Integer onColor,Integer offColor) throws IOException {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            BufferedImage qrImage = generateQRCodeImage(content, width, height);
+            BufferedImage qrImage = generateQRCodeImage(content, width, height,onColor,offColor);
 //            BufferedImage logo = ImageIO.read(new File(logoPath));
 
             BufferedImage logo;
@@ -128,14 +128,25 @@ public class NaQrCodeUtil {
     }
 
     // 生成二维码图像
-    private static BufferedImage generateQRCodeImage(String content, int width, int height) throws WriterException {
+    private static BufferedImage generateQRCodeImage(String content, int width, int height,Integer onColor,Integer offColor) throws WriterException {
         Map<EncodeHintType, Object> hints = new HashMap<>();
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
         hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H); // H 级别容错，适合嵌入 logo
         hints.put(EncodeHintType.MARGIN, 1);
 
+        /**
+         *  int onColor = 0xFF1E90FF; // 你想要的二维码颜色，比如道奇蓝
+         *     int offColor = 0xFFFFFFFF; // 白色背景
+         */
         BitMatrix bitMatrix = new QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, width, height, hints);
-        return MatrixToImageWriter.toBufferedImage(bitMatrix, new MatrixToImageConfig());
+        MatrixToImageConfig config;
+        if(onColor != null && offColor != null){
+            config =new MatrixToImageConfig(onColor, offColor);
+        }else {
+            config = new MatrixToImageConfig();
+        }
+
+        return MatrixToImageWriter.toBufferedImage(bitMatrix, config);
     }
 
     // 将 logo 嵌入二维码图像中央
