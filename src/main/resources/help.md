@@ -1099,6 +1099,8 @@ spring:
 17. csrf配置
 ns:
   csrf:
+    # 是否启用 CSRF 防护（默认 false = 不启用）
+    enabled: true
     # 是否允许 Referer 为空的请求（默认 true = 不拦截）
     allowBlankReferer: true
     # 请求路径白名单（如：/health、/login）
