@@ -11,6 +11,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * CSRF（跨站请求伪造）防护过滤器
@@ -76,7 +79,7 @@ public class NaCsrfFilter implements Filter {
                 String cleanPath = requestPath.replaceFirst(req.getContextPath(), "");
 
                 // 判断路径是否在路径白名单中
-                if (!isInPathWhitelist(cleanPath)) {
+                if (!isInPathWhitelist(config.getCsrfWhitePaths(),cleanPath)) {
                     // 非白名单域名 且 非白名单路径，触发 CSRF 拦截
                     log.warn("[CSRF 拦截] Referer 不可信: {}", referer);
                     log.warn("[CSRF 拦截] 请求地址: {}", req.getRequestURL());
@@ -119,15 +122,18 @@ public class NaCsrfFilter implements Filter {
     }
 
     /**
+     * 支持简单通配符和正则匹配的路径判断
      * 判断路径是否在 CSRF 路径白名单中
      */
-    private boolean isInPathWhitelist(String path) {
-        if (CollectionUtils.isNotEmpty(config.getCsrfWhitePaths())) {
-            for (String whitePath : config.getCsrfWhitePaths()) {
-                if (StringUtils.isNotBlank(whitePath) && whitePath.equals(path)) {
-                    log.debug("[CSRF] 命中路径白名单: {}", path);
-                    return true;
-                }
+    public static Boolean isInPathWhitelist(List<String> requestUris, String requestUri) {
+        for (String uri : requestUris) {
+            // 将 uriPattern 转换为正则表达式
+            String regex = uri.replace("/*", "/[^/]*");
+
+            // 使用 Pattern 进行匹配
+            if (Pattern.matches(regex, requestUri)) {
+                log.debug("[CSRF] 命中路径白名单: {}", requestUri);
+                return true;
             }
         }
         return false;

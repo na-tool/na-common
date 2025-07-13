@@ -1095,6 +1095,30 @@ spring:
         encoding: utf-8
         basename: i18n/messages
         cache-duration: 3600s  # 热加载，设置为 -1 表示缓存永不过期
+
+17. csrf配置
+ns:
+  csrf:
+    # 是否允许 Referer 为空的请求（默认 true = 不拦截）
+    allowBlankReferer: true
+    # 请求路径白名单（如：/health、/login）
+    csrfWhitePaths: 
+      - /health
+      - /login
+    # 域名白名单（如：www.example.com:8080）
+    csrfWhiteDomains: 
+      - www.example.com:8080
+
+18. xss配置
+na:
+  # 对于json 首先确保 na.jackson=true
+  jackson: true
+  xss:
+    enabled: true
+    # 排除路径
+    excludePaths：
+      - /login
+      - /health
 ```
 
 

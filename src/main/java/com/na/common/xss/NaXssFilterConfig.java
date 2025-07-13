@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ConditionalOnProperty(
-        name = {"na.xss.http"},
+        name = {"na.xss.enabled"},
         havingValue = "true",
         matchIfMissing = false
 )

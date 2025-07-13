@@ -1,10 +1,13 @@
 package com.na.common.xss;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * XSS 防护过滤器
@@ -15,6 +18,7 @@ import java.util.List;
  * 该过滤器仅作用于非 JSON 类型的请求数据（即：@RequestParam、@RequestHeader、表单提交、URL 参数等）。
  * 对于 JSON 类型（@RequestBody）的参数，需要使用 Jackson 反序列化器单独处理。
  */
+@Slf4j
 public class NaXssFilter implements Filter {
 
     private final List<String> excludePaths;
@@ -30,27 +34,30 @@ public class NaXssFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String requestUri = httpRequest.getRequestURI();
 
-        if (isExcluded(requestUri)) {
+        requestUri = requestUri.replaceFirst(httpRequest.getContextPath(), "");
+        if (isExcluded(excludePaths,requestUri)) {
             chain.doFilter(request, response); // 不包装
         } else {
             chain.doFilter(new NaXssHttpServletRequestWrapper(httpRequest), response);
         }
     }
 
-    private boolean isExcluded(String uri) {
-        for (String pattern : excludePaths) {
-            if (match(uri, pattern)) return true;
+    /**
+     * 支持简单通配符和正则匹配的路径判断
+     * 判断路径是否在 xss 路径白名单中
+     */
+    private boolean isExcluded(List<String> requestUris, String requestUri) {
+        for (String uri : requestUris) {
+            // 将 uriPattern 转换为正则表达式
+            String regex = uri.replace("/*", "/[^/]*");
+
+            // 使用 Pattern 进行匹配
+            if (Pattern.matches(regex, requestUri)) {
+                log.debug("[XSS] 命中路径白名单: {}", requestUri);
+                return true;
+            }
         }
         return false;
-    }
-
-    private boolean match(String uri, String pattern) {
-        // 支持 /xxx/* 这种简单通配
-        if (pattern.endsWith("/*")) {
-            return uri.startsWith(pattern.substring(0, pattern.length() - 2));
-        } else {
-            return uri.equals(pattern);
-        }
     }
 
     @Override public void init(FilterConfig filterConfig) {}

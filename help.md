@@ -1189,10 +1189,8 @@ na:
   # 对于json 首先确保 na.jackson=true
   jackson: true
   xss:
-    json: true
-    # 开启非json请求
-    http: true
-    # 非json排除路径
+    enabled: true
+    # 排除路径
     excludePaths：
       - /login
       - /health

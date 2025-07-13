@@ -2,19 +2,52 @@ package com.na.common.xss;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class NaXssStringJsonDeserializer extends JsonDeserializer<String> {
+/**
+ * 针对 JSON 字符串字段的 XSS 防护反序列化器
+ *
+ * 用于在反序列化时自动清洗含有潜在 XSS 攻击代码的字符串字段内容。
+ * 支持通过配置类 {@link NaAutoXssConfig} 设置排除路径。
+ */
+public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implements ContextualDeserializer {
 
+    /**
+     * 配置类（包含路径排除规则）
+     */
+    private static NaAutoXssConfig config;
+
+    /**
+     * 设置配置对象（在 JacksonConfig 中注入）
+     * @param cfg
+     */
+    public static void setConfig(NaAutoXssConfig cfg) {
+        config = cfg;
+    }
+
+    // 构造器（必须）
+    public NaXssStringJsonDeserializer() {
+
+    }
+
+    // 常用 XSS 正则表达式集合
     private static final List<String> regexList = new ArrayList<>();
+
+    // 所有正则拼接的统一表达式（用于 containsXss 方法）
     private static final String XSS_PATTERN;
 
     static {
@@ -59,14 +92,17 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> {
         regexList.add("(\\s+)onfinish\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onfinish\\s*=(\\s*)\\\"(.*?)\\\"");
         regexList.add("(\\s+)onstart\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onstart\\s*=(\\s*)\\\"(.*?)\\\"");
 
-        StringBuilder combinedPattern = new StringBuilder();
+        StringBuilder combined = new StringBuilder();
         for (String regex : regexList) {
-            if (combinedPattern.length() > 0) combinedPattern.append("|");
-            combinedPattern.append("(").append(regex).append(")");
+            if (combined.length() > 0) combined.append("|");
+            combined.append("(").append(regex).append(")");
         }
-        XSS_PATTERN = combinedPattern.toString();
+        XSS_PATTERN = combined.toString();
     }
 
+    /**
+     * 实际的 JSON 字段反序列化逻辑
+     */
     @Override
     public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         String source = p.getText();
@@ -86,9 +122,20 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> {
         return value;
     }
 
+    /**
+     * 判断输入字符串是否包含 XSS 攻击代码（用于单元测试或手动检测）
+     */
     public static boolean containsXss(String input) {
         Pattern pattern = Pattern.compile(XSS_PATTERN, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
         Matcher matcher = pattern.matcher(input);
         return matcher.find();
+    }
+
+    /**
+     * 支持 ContextualDeserializer 以确保字段类型一致
+     */
+    @Override
+    public JsonDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) {
+        return this; // 保持当前实例
     }
 }
