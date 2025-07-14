@@ -1,6 +1,8 @@
 package com.na.common.csrf;
 
 import com.alibaba.fastjson.JSONObject;
+import com.na.common.exceptions.NaBusinessException;
+import com.na.common.result.enums.NaStatus;
 import com.na.common.utils.NaCommonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -56,8 +58,8 @@ public class NaCsrfFilter implements Filter {
                 return;
             } else {
                 log.warn("[CSRF 拦截] Referer 为空，且未允许空 Referer 请求。");
-                res.sendRedirect(req.getContextPath() + "/illegal");
-                return;
+//                res.sendRedirect(req.getContextPath() + "/illegal");
+                throw new NaBusinessException(NaStatus.AUTHORIZATION_EXPIRED,null);
             }
         }
 
@@ -87,8 +89,8 @@ public class NaCsrfFilter implements Filter {
                     // 非白名单域名 且 非白名单路径，触发 CSRF 拦截
                     log.warn("[CSRF 拦截] Referer 不可信: {}", referer);
                     log.warn("[CSRF 拦截] 请求地址: {}", req.getRequestURL());
-                    res.sendRedirect(req.getContextPath() + "/illegal"); // 跳转到非法访问页面
-                    return;
+//                    res.sendRedirect(req.getContextPath() + "/illegal"); // 跳转到非法访问页面
+                    throw new NaBusinessException(NaStatus.AUTHORIZATION_EXPIRED,null);
                 }
             }
         }
@@ -120,8 +122,9 @@ public class NaCsrfFilter implements Filter {
             return (url.getPort() == -1) ? url.getHost() : url.getHost() + ":" + url.getPort();
         } catch (MalformedURLException e) {
             log.warn("无效 Referer：{}", referer);
-            response.sendRedirect(request.getContextPath() + "/illegal");
-            return "";
+//            response.sendRedirect(request.getContextPath() + "/illegal");
+//            return "";
+            throw new NaBusinessException(NaStatus.AUTHORIZATION_EXPIRED,null);
         }
     }
 
