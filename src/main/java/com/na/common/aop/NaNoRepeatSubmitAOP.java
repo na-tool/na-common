@@ -68,6 +68,7 @@ public class NaNoRepeatSubmitAOP {
         int num = annotation.num();
         boolean showRemainingTime = annotation.showRemainingTime();
         boolean requestParams = annotation.requestParams();
+        String dateMsg = annotation.dateMsg();
         NaDateTimeUtil.DateFormat dateFormat = annotation.dateFormat();
 //        String zoneId = annotation.zoneId();
 
@@ -94,7 +95,7 @@ public class NaNoRepeatSubmitAOP {
                 String msg = annotation.msg();
                 if (showRemainingTime) {
                     if (remainingExpireTime != null && remainingExpireTime > 0) {
-                        msg = msg + " 当前剩余时间：" + NaDateTimeUtil.parseToString(remainingExpireTime, dateFormat);
+                        msg = msg + dateMsg + NaDateTimeUtil.parseToString(remainingExpireTime, dateFormat);
                     }
                 }
                 throw new NaBusinessException(StringUtils.isEmpty(msg) ? NaStatus.FAIL_REQUEST_REPETITION.getMsg() : msg, null);

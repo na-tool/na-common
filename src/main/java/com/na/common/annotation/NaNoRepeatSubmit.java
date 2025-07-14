@@ -17,6 +17,7 @@ public @interface NaNoRepeatSubmit {
     int num() default 1; // 提交次数
     boolean showRemainingTime() default false; // 是否显示剩余时间
 
+    String dateMsg() default "当前剩余时间："; // 时间
     NaDateTimeUtil.DateFormat dateFormat() default NaDateTimeUtil.DateFormat.SS_CHINESE; // 时间格式
 //    String zoneId() default "Asia/Shanghai"; // 时区
     boolean requestParams() default false; // 是否使用请求参数构建key
