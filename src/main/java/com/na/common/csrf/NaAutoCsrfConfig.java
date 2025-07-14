@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,7 +12,7 @@ import java.util.List;
  */
 @Data
 @Component
-@ConfigurationProperties(prefix = "ns.csrf")
+@ConfigurationProperties(prefix = "na.csrf")
 public class NaAutoCsrfConfig {
 
     /**
@@ -23,10 +23,10 @@ public class NaAutoCsrfConfig {
     /**
      * 请求路径白名单（如：/health、/login）
      */
-    private List<String> csrfWhitePaths = new LinkedList<>();
+    private List<String> csrfWhitePaths = new ArrayList<>();
 
     /**
      * 域名白名单（如：www.example.com:8080）
      */
-    private List<String> csrfWhiteDomains = new LinkedList<>();
+    private List<String> csrfWhiteDomains = new ArrayList<>();
 }
