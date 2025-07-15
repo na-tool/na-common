@@ -130,13 +130,52 @@ public class NaCsrfFilter implements Filter {
 
     /**
      * 判断域名是否在 CSRF 域名白名单中
+     * 判断 refererHost 是否在白名单中
+     * refererHost 可能是 ip[:port] 或 域名[:port]
      */
     private boolean isInDomainWhitelist(String refererHost) {
-        if (CollectionUtils.isNotEmpty(config.getCsrfWhiteDomains())) {
-            for (String whiteDomain : config.getCsrfWhiteDomains()) {
-                if (StringUtils.isNotBlank(whiteDomain) && whiteDomain.equalsIgnoreCase(refererHost)) {
-                    log.debug("[CSRF] 命中域名白名单: {}", refererHost);
+        log.debug("[CSRF] 命中域名白名单: {}", refererHost);
+        List<String> whitelist = config.getCsrfWhiteDomains();
+        if (CollectionUtils.isEmpty(whitelist) || StringUtils.isBlank(refererHost)) {
+            return false;
+        }
+
+        // 拆分请求的 host 和端口
+        String[] hostPortSplit = refererHost.split(":");
+        String host = hostPortSplit[0];
+        Integer port = null;
+        if (hostPortSplit.length > 1) {
+            try {
+                port = Integer.parseInt(hostPortSplit[1]);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        for (String pattern : whitelist) {
+            if (StringUtils.isBlank(pattern)) {
+                continue;
+            }
+
+            // 解析白名单pattern中的端口（可能无端口）
+            String[] patternSplit = pattern.split(":");
+            String patternHost = patternSplit[0];
+            String patternPortPart = patternSplit.length > 1 ? patternSplit[1] : null;
+
+            // 先判断host部分是否匹配
+            if (NaCommonUtil.isHostMatch(patternHost, host)) {
+                // Host匹配，再判断端口
+                if (patternPortPart == null) {
+                    // 白名单没指定端口，任何端口都匹配
                     return true;
+                } else {
+                    // 白名单指定了端口或端口范围
+                    if (port == null) {
+                        // 请求没有端口，不匹配白名单指定端口
+                        continue;
+                    }
+                    if (NaCommonUtil.isPortMatch(patternPortPart, port)) {
+                        return true;
+                    }
                 }
             }
         }

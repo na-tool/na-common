@@ -6,7 +6,7 @@
     <artifactId>na-common</artifactId>
     <groupId>io.github.na-tool</groupId>
     <name>${project.artifactId}</name>
-    <version>1.0.12</version>
+    <version>1.0.13</version>
     <packaging>jar</packaging>
     <description>公共部分</description>
 
@@ -251,6 +251,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9.1</version>
+                <configuration>
+                    <failOnError>false</failOnError> <!-- 不因javadoc错误而构建失败 -->
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>

@@ -20,6 +20,9 @@ public class NaCsrfFilterConfig {
 
     /**
      * 注册 CSRF 过滤器 Bean（拦截所有 HTTP 请求）
+     *
+     * @param config CSRF 配置类
+     * @return 过滤器注册对象
      */
     @Bean
     public FilterRegistrationBean<NaCsrfFilter> csrfFilterRegistration(NaAutoCsrfConfig config) {

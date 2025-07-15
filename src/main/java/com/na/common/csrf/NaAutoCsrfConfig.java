@@ -27,6 +27,11 @@ public class NaAutoCsrfConfig {
 
     /**
      * 域名白名单（如：www.example.com:8080）
+     *   - www.example.com:8080          # 精确端口匹配
+     *   - www.example.com:8000-9000     # 端口范围匹配
+     *   - 192.168.1.*                   # IP段通配
+     *   - 192.168.1.10-192.168.1.20    # IP范围匹配
+     *   - h5.lianshangtv.com            # 纯域名匹配
      */
     private List<String> csrfWhiteDomains = new ArrayList<>();
 }
