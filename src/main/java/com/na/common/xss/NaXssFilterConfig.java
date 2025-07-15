@@ -22,6 +22,7 @@ public class NaXssFilterConfig {
     /**
      * 注册 XSS 过滤器 Bean
      *
+     * @param config XSS 配置对象，包含过滤器排除路径等配置信息
      * @return FilterRegistrationBean，用于拦截所有 HTTP 请求并执行 XSS 清理逻辑。
      */
     @Bean

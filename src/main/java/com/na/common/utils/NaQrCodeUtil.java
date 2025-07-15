@@ -101,6 +101,8 @@ public class NaQrCodeUtil {
      * @param width   宽度
      * @param height  高度
      * @param logoPath logo 图片路径 （支持本地绝对路径）
+     * @param onColor 前景色
+     * @param offColor 背景色
      * @return 生成后的二维码 Base64 字符串 （不含 data:image/png;base64 前缀）
      * @throws IOException 生成二维码或读取 logo 文件时出错
      */

@@ -34,8 +34,9 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implem
     private static NaAutoXssConfig config;
 
     /**
-     * 设置配置对象（在 JacksonConfig 中注入）
-     * @param cfg
+     * 设置全局的 XSS 配置对象（通常在 JacksonConfig 中注入）
+     *
+     * @param cfg XSS 配置对象，用于控制过滤规则等
      */
     public static void setConfig(NaAutoXssConfig cfg) {
         config = cfg;
@@ -155,7 +156,10 @@ public class NaXssStringJsonDeserializer extends JsonDeserializer<String> implem
     }
 
     /**
-     * 判断输入字符串是否包含 XSS 攻击代码（用于单元测试或手动检测）
+     * 判断输入字符串是否包含可能的 XSS 攻击代码，用于单元测试或手动检测。
+     *
+     * @param input 待检测的输入字符串
+     * @return 如果包含 XSS 攻击代码，返回 true；否则返回 false
      */
     public static boolean containsXss(String input) {
         Pattern pattern = Pattern.compile(XSS_PATTERN, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
