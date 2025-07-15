@@ -9,6 +9,8 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.annotation.PostConstruct;
+
 @Configuration
 @ConditionalOnProperty(
         name = {"na.cors"}, matchIfMissing = false
@@ -16,6 +18,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class NaCorsConfig implements WebMvcConfigurer {
     // 当前跨域请求最大有效时长。这里默认1天
     private static final long MAX_AGE = 24 * 60 * 60;
+
+    @PostConstruct
+    public void naCorsConfigInit() {
+        System.out.println("[NaCorsConfig] CORS 配置已加载！");
+    }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {

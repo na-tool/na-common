@@ -119,12 +119,12 @@ public class NaCommonUtil {
             return true; // 精确匹配
         }
 
-        // 判断是否是IP格式（4段数字）
-        if (isIp(patternHost) && isIp(requestHost)) {
+        // 如果都是 IP 或 IP模式（支持通配符和范围）
+        if (isIpPattern(patternHost) && isIp(requestHost)) {
             return isIpSegmentMatch(patternHost, requestHost);
         }
 
-        // 不支持通配的域名，必须精确匹配，已判断过精确匹配，故这里返回false
+        // 不支持通配的域名，必须精确匹配
         return false;
     }
 
@@ -138,6 +138,26 @@ public class NaCommonUtil {
      */
     public static boolean isIp(String host) {
         return host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
+    }
+
+    /**
+     * 判断是否为合法的IP段模式（允许 * 或 - 存在于任意段中）
+     * 判断是否为合法的 IP 段匹配模式。
+     * <p>
+     * 支持的格式：
+     * <ul>
+     *     <li>通配符：如 {@code 192.168.1.*}</li>
+     *     <li>数字范围：如 {@code 192.168.1.10-20}</li>
+     *     <li>整段范围（将由其他方法处理）：如 {@code 192.168.1.10-192.168.1.20}</li>
+     * </ul>
+     * <p>
+     * 注意：该方法只校验格式是否允许通配符（*）或范围（-）存在，并不校验 IP 的有效性或顺序。
+     *
+     * @param host IP 模式字符串，例如 "192.168.1.*"、"192.168.1.10-20"
+     * @return 如果是合法的 IP 段匹配模式，返回 true；否则返回 false
+     */
+    public static boolean isIpPattern(String host) {
+        return host.matches("[\\d*\\-]+\\.[\\d*\\-]+\\.[\\d*\\-]+\\.[\\d*\\-]+");
     }
 
     /**
