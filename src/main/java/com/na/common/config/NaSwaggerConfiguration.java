@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @EnableSwagger2WebMvc
 @EnableKnife4j
 @ConditionalOnProperty(name = "na.swagger.group", havingValue = "false", matchIfMissing = false)
-public class NaSwaggerConfiguration extends NaSwaggerConfig{
+public class NaSwaggerConfiguration extends NaSwaggerConfig {
     @Autowired
     private Environment environment;
 
