@@ -18,6 +18,7 @@ public class NaDateTimeUtil {
 
         YYYY_MM_DD_HH_MM("yyyy-MM-dd HH:mm"),
         YYY_MM_DD_HH_MM_CHINESE("yyyy年MM月dd日 HH:mm"),
+        YYYY_X_MM_X_DD_HH_MM("yyyy/MM/dd HH:mm"),
 
         YYYY_MM_DD("yyyy-MM-dd"),
         YYYY_MM_DD_CHINESE("yyyy年MM月dd日"),
@@ -29,6 +30,15 @@ public class NaDateTimeUtil {
 
         HH_MM("HH:mm"),
         HH_MM_CHINESE("HH时mm分"),
+
+        MM_SS("mm:ss"),
+        MM_SS_CHINESE("mm分ss秒"),
+
+        HH("HH"),
+        HH_CHINESE("HH时"),
+
+        MM("mm"),
+        MM_CHINESE("mm分"),
 
         SS("ss"),
         SS_CHINESE("ss秒"),
@@ -43,8 +53,8 @@ public class NaDateTimeUtil {
         YYYY("yyyy"),
         YYYY_CHINESE("yyyy年"),
 
-        MM("MM"),
-        MM_CHINESE("MM月"),
+        MMY("MM"),
+        MMY_CHINESE("MM月"),
 
         DD("dd"),
         DD_CHINESE("dd日"),
