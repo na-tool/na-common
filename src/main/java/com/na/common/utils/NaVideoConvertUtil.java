@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class VideoConvertUtil {
+public class NaVideoConvertUtil {
 
     /**
      * MP4转M3U8
