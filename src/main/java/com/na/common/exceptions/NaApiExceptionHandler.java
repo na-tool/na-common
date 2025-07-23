@@ -379,7 +379,7 @@ public class NaApiExceptionHandler {
             sysLogDto.setExDetail(expDetail + msg);
             naLogEventUtil.publishEvent(sysLogDto);
 
-            return ResponseEntity.status(e.getStatus()).body(NaResult.error(NaStatus.USER_NEED_AUTHORITIES));
+            return ResponseEntity.status(e.getStatus()).body(NaResult.errorWithArgs(NaStatus.USER_NEED_AUTHORITIES,msg));
         }catch (Exception ex){
             NaSysLogDto sysLogDto = new NaSysLogDto();
             sysLogDto.setType(NaConst.EX);
@@ -419,7 +419,7 @@ public class NaApiExceptionHandler {
             sysLogDto.setExDetail(expDetail + msg);
             naLogEventUtil.publishEvent(sysLogDto);
 
-            return ResponseEntity.status(e.getStatus()).body(NaResult.error(NaStatus.USER_NO_ACCESS));
+            return ResponseEntity.status(e.getStatus()).body(NaResult.errorWithArgs(NaStatus.USER_NO_ACCESS,msg));
         }catch (Exception ex){
             NaSysLogDto sysLogDto = new NaSysLogDto();
             sysLogDto.setType(NaConst.EX);
