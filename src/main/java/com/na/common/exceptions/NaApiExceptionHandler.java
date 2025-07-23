@@ -166,10 +166,10 @@ public class NaApiExceptionHandler {
      * @return 返回统一的错误响应对象
      */
     @ExceptionHandler(NaUnauthorizedException.class)
-    public ResponseEntity<String> handleUnauthorizedException(NaUnauthorizedException ex) {
+    public ResponseEntity<NaResult> handleUnauthorizedException(NaUnauthorizedException ex) {
         String msg = i18n(ex.getMessage());
         log.error("UnauthorizedException: {}", msg);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(msg);
+        return ResponseEntity.status(ex.getStatus()).body(NaResult.error(NaStatus.USER_NEED_AUTHORITIES));
     }
 
     /**
@@ -178,10 +178,10 @@ public class NaApiExceptionHandler {
      * @return 返回统一的错误响应对象
      */
     @ExceptionHandler(NaForbiddenException.class)
-    public ResponseEntity<String> handleForbiddenException(NaForbiddenException ex) {
+    public ResponseEntity<NaResult> handleForbiddenException(NaForbiddenException ex) {
         String msg = i18n(ex.getMessage());
         log.error("ForbiddenException: {}", msg);
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(msg);
+        return ResponseEntity.status(ex.getStatus()).body(NaResult.error(NaStatus.USER_NO_ACCESS));
     }
 
     /**
