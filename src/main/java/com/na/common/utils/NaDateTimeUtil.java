@@ -92,6 +92,26 @@ public class NaDateTimeUtil {
         return Date.from(beijingTime.toInstant());
     }
 
+    public static Date parseToDate(String date, NaDateTimeUtil.DateFormat timeFormat) {
+        if (date == null || date.trim().isEmpty()) {
+            return null;
+        }
+
+        // 默认格式
+        if (timeFormat == null) {
+            timeFormat = NaDateTimeUtil.DateFormat.YYYY_MM_DD_HH_MM_ss;
+        }
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat(timeFormat.getValue());
+            sdf.setLenient(false); // 严格解析
+            return sdf.parse(date);
+        } catch (ParseException e) {
+            System.err.println("日期解析失败：" + e.getMessage());
+            throw new RuntimeException("日期解析失败：" + e.getMessage(), e);
+        }
+    }
+
     public static long getBeijingTimestampMillis() {
         return ZonedDateTime.now(ZoneId.of("Asia/Shanghai"))
                 .toInstant()
