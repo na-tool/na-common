@@ -8,7 +8,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 
 /**
  * 访问地址工具类：用于获取客户端真实 IP 地址（支持代理场景、本地回环）
@@ -89,5 +91,48 @@ public class NaAddressUtil {
             log.warn("获取客户端 IP 异常: {}", e.getMessage());
             return "";
         }
+    }
+
+    public static String getMacAddress() {
+        try {
+            InetAddress ip = InetAddress.getLocalHost();
+            NetworkInterface ni = NetworkInterface.getByInetAddress(ip);
+
+            if (ni == null) {
+                // 有些系统可能获取不到本地 IP，遍历所有接口
+                Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+                while (nis.hasMoreElements()) {
+                    ni = nis.nextElement();
+                    if (!ni.isLoopback() && ni.getHardwareAddress() != null) {
+                        break;
+                    }
+                }
+            }
+
+            byte[] mac = ni.getHardwareAddress();
+            if (mac == null) {
+                return null;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (byte b : mac) {
+                sb.append(String.format("%02X-", b));
+            }
+
+            // 去掉最后一个 `-`
+            if (sb.length() > 0) {
+                sb.setLength(sb.length() - 1);
+            }
+
+            return sb.toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(getMacAddress());
     }
 }
