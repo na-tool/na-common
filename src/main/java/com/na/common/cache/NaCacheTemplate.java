@@ -15,21 +15,33 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+/**
+ * Redis缓存操作工具类
+ * 提供全面的Redis操作封装，包括字符串、哈希、列表、集合、有序集合等数据结构的操作
+ * 支持分布式锁、缓存过期管理和批量操作
+ */
 @Slf4j
 public class NaCacheTemplate {
 
-    // 获取 Spring 容器中的 StringRedisTemplate Bean
-    private static final StringRedisTemplate redisTemplate = NaSpringContextUtil.getBean(StringRedisTemplate.class);
+    /**
+     * Redis模板实例，通过Spring上下文获取
+     */
+    private static RedisTemplate<String, Object> redisTemplate;
 
-    private static final ValueOperations<String, String> valueRedis;
+    /**
+     * Redis字符串操作对象
+     */
+    private static ValueOperations<String, Object> valueRedis;
 
     static {
+        redisTemplate = NaSpringContextUtil.getBean("redisTemplate", RedisTemplate.class);
         valueRedis = redisTemplate.opsForValue();
     }
 
     /**
      * 删除指定缓存键
      * @param key 缓存键
+     *
      */
     public static void clear(String key) {
         if (StringUtils.isBlank(key)) {
@@ -40,8 +52,9 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 删除所有以 prefix 开头的缓存键
+     * 删除所有以指定前缀开头的缓存键
      * @param prefix 键前缀
+     *
      */
     public static void clearByPrefix(String prefix) {
         if (StringUtils.isBlank(prefix)) {
@@ -56,7 +69,8 @@ public class NaCacheTemplate {
 
     /**
      * 删除所有包含特定字符串的缓存键
-     * @param pattern 键模式
+     * @param pattern 键中包含的字符串
+     *
      */
     public static void clearKeysWithPattern(String pattern) {
         if (StringUtils.isBlank(pattern)) {
@@ -73,10 +87,11 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 存储对象为 JSON 字符串到 Redis 缓存（无过期时间）
+     * 存储对象为JSON字符串到Redis缓存（无过期时间）
      * @param key 缓存键
      * @param obj 缓存对象
      * @param <T> 对象类型
+     *
      */
     public static <T> void setCache(String key, T obj) {
         if (StringUtils.isBlank(key)) {
@@ -87,12 +102,13 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 存储对象为 JSON 字符串到 Redis 缓存，并设置过期时间
+     * 存储对象为JSON字符串到Redis缓存，并设置过期时间
      * @param key 缓存键
      * @param obj 缓存对象
      * @param time 过期时间
      * @param timeUnit 时间单位
      * @param <T> 对象类型
+     *
      */
     public static <T> void setCache(String key, T obj, Long time, TimeUnit timeUnit) {
         if (StringUtils.isBlank(key)) {
@@ -109,22 +125,24 @@ public class NaCacheTemplate {
     /**
      * 获取缓存中的字符串值
      * @param key 缓存键
-     * @return JSON字符串，找不到返回 null
+     * @return JSON字符串，找不到返回null
+     *
      */
     public static String getCache(String key) {
         if (StringUtils.isBlank(key)) {
             log.warn("getCache skipped: key is blank");
             return null;
         }
-        return valueRedis.get(key);
+        return String.valueOf(valueRedis.get(key));
     }
 
     /**
      * 获取指定类型的缓存对象
      * @param key 缓存键
-     * @param tClass 目标类型 Class
+     * @param tClass 目标类型Class
      * @param <T> 泛型类型
-     * @return 目标类型对象，找不到或解析失败返回 null
+     * @return 目标类型对象，找不到或解析失败返回null
+     *
      */
     public static <T> T getCache(String key, Class<T> tClass) {
         String cache = getCache(key);
@@ -142,10 +160,11 @@ public class NaCacheTemplate {
     /**
      * 获取指定类型缓存，如果不存在则调用回调函数获取数据
      * @param key 缓存键
-     * @param tClass 目标类型 Class
+     * @param tClass 目标类型Class
      * @param function 缓存未命中时调用的函数
      * @param <T> 泛型类型
      * @return 缓存数据或回调结果
+     *
      */
     public static <T> T getCache(String key, Class<T> tClass, Supplier<T> function) {
         T cache = getCache(key, tClass);
@@ -161,6 +180,7 @@ public class NaCacheTemplate {
      * @param tClass 列表元素类型
      * @param <T> 元素泛型
      * @return List，缓存为空返回空列表
+     *
      */
     public static <T> List<T> getCacheList(String key, Class<T> tClass) {
         String cache = getCache(key);
@@ -178,9 +198,10 @@ public class NaCacheTemplate {
     /**
      * 获取指定类型的缓存集合
      * @param key 缓存键
-     * @param clazz 元素类型 Class
+     * @param clazz 元素类型Class
      * @param <T> 原始缓存类型
-     * @return Set，找不到或解析失败返回 null
+     * @return Set，找不到或解析失败返回null
+     *
      */
     public static <T> Set<T> getCacheSet(String key, Class<T> clazz) {
         String cache = getCache(key);
@@ -196,14 +217,15 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行 function，结果转成 @return {@code List<B>}
+     * 获取指定类型数据，如果没有则执行function，结果转成{@code List<B> }
      * @param key 缓存键
-     * @param tClass 缓存数据的原始类型（通常为 {@code List.class }）
+     * @param tClass 缓存数据的原始类型（通常为List.class）
      * @param function 缓存未命中时回调函数
      * @param itemClass 最终列表元素类型
      * @param <T> 缓存数据类型泛型
      * @param <B> 最终元素类型泛型
-     * @return {@code List<B>}
+     * @return {@code List<B> }转换后的列表
+     *
      */
     public static <T, B> List<B> getCacheList(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
         T cache = getCache(key, tClass, function);
@@ -220,14 +242,15 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行 function，结果转成 {@code Set<B>}
+     * 获取指定类型数据，如果没有则执行function，结果转成{@code Set<B> }
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型
      * @param function 缓存未命中时回调函数
      * @param itemClass 最终元素类型
      * @param <T> 缓存数据泛型
      * @param <B> 最终元素泛型
-     * @return {@code Set<B>}
+     * @return {@code Set<B> }转换后的集合
+     *
      */
     public static <T, B> Set<B> getCacheSet(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
         T cache = getCache(key, tClass, function);
@@ -244,14 +267,15 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行 function，结果转成 {@code Deque<B>}
+     * 获取指定类型数据，如果没有则执行function，结果转成{@code Deque<B>}
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型
      * @param function 缓存未命中时回调函数
      * @param itemClass 元素类型
      * @param <T> 缓存数据泛型
      * @param <B> 元素泛型
-     * @return {@code Deque<B>}
+     * @return {@code Deque<B>}转换后的双端队列
+     *
      */
     public static <T, B> Deque<B> getCacheDeque(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
         T cache = getCache(key, tClass, function);
@@ -271,6 +295,7 @@ public class NaCacheTemplate {
      * 获取剩余过期时间，单位毫秒
      * @param key 缓存键
      * @return 剩余时间毫秒，null表示不存在，-1表示无过期时间
+     *
      */
     public static Long getRemainingExpireTime(String key) {
         if (StringUtils.isBlank(key)) {
@@ -289,7 +314,8 @@ public class NaCacheTemplate {
     /**
      * 判断缓存键是否存在
      * @param key 缓存键
-     * @return true 存在，false 不存在或 key 为空
+     * @return true存在，false不存在或key为空
+     *
      */
     public static boolean exists(String key) {
         if (StringUtils.isBlank(key)) {
@@ -299,11 +325,12 @@ public class NaCacheTemplate {
     }
 
     /**
-     * Redis Hash 存值
-     * @param key Redis 键
-     * @param item Hash 字段名
+     * Redis Hash存值
+     * @param key Redis键
+     * @param item Hash字段名
      * @param value 字段值
      * @return 操作是否成功
+     *
      */
     public static boolean hset(String key, String item, Object value) {
         if (StringUtils.isBlank(key) || StringUtils.isBlank(item)) {
@@ -321,12 +348,13 @@ public class NaCacheTemplate {
     }
 
     /**
-     * Redis Hash 存值并设置过期时间（秒）
-     * @param key Redis 键
-     * @param item Hash 字段名
+     * Redis Hash存值并设置过期时间（秒）
+     * @param key Redis键
+     * @param item Hash字段名
      * @param value 字段值
-     * @param time 过期时间，秒，&gt;0才生效
+     * @param time 过期时间，秒，{@code > }0才生效
      * @return 操作是否成功
+     *
      */
     public static boolean hset(String key, String item, Object value, long time) {
         if (time <= 0) {
@@ -342,8 +370,9 @@ public class NaCacheTemplate {
     /**
      * 设置键过期时间（秒）
      * @param key 键
-     * @param time 过期时间秒数，必须 &gt;0
+     * @param time 过期时间秒数，必须 {@code >}0
      * @return 是否成功
+     *
      */
     public static boolean expire(String key, long time) {
         if (time <= 0 || StringUtils.isBlank(key)) {
@@ -361,9 +390,10 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取 Redis Hash 字段数量
-     * @param key Redis 键
-     * @return 字段数量，异常返回 null
+     * 获取Redis Hash字段数量
+     * @param key Redis键
+     * @return 字段数量，异常返回null
+     *
      */
     public static Long getHashSize(String key) {
         if (StringUtils.isBlank(key)) {
@@ -381,10 +411,11 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取 Redis Hash 中指定字段的值
-     * @param key Redis 键
-     * @param item Hash 字段名
-     * @return 字段值，异常或无效参数返回 null
+     * 获取Redis Hash中指定字段的值
+     * @param key Redis键
+     * @param item Hash字段名
+     * @return 字段值，异常或无效参数返回null
+     *
      */
     public static Object hget(String key, String item) {
         if (StringUtils.isBlank(key) || StringUtils.isBlank(item)) {
@@ -402,11 +433,12 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 尝试获取分布式锁（使用 String Redis 键的 setIfAbsent 方式）
+     * 尝试获取分布式锁（使用String Redis键的setIfAbsent方式）
      * @param lockKey 锁的键
      * @param timeout 锁有效时间
      * @param unit 时间单位
      * @return 是否成功获取锁
+     *
      */
     public static boolean tryLock(String lockKey, long timeout, TimeUnit unit) {
         if (StringUtils.isBlank(lockKey) || timeout <= 0) {
@@ -418,9 +450,10 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 释放锁，只有当前锁值为 "locked" 时才删除
+     * 释放锁，只有当前锁值为"locked"时才删除
      * @param lockKey 锁键
      * @return 是否成功释放
+     *
      */
     public static boolean releaseLock(String lockKey) {
         if (StringUtils.isBlank(lockKey)) {
@@ -435,12 +468,13 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 扫描匹配的 Redis Hash 键，将其转换为指定类型列表
-     * @param keyPattern Redis Key 模式，如 "order:*"
+     * 扫描匹配的Redis Hash键，将其转换为指定类型列表
+     * @param keyPattern Redis Key模式，如"order:*"
      * @param scanCount 每次扫描的条数
      * @param targetType 目标转换类型
      * @param <T> 泛型类型
      * @return 转换后的列表，异常时返回空列表
+     *
      */
     public static <T> List<T> scanRedisHashData(String keyPattern, int scanCount, Class<T> targetType) {
         List<T> result = new ArrayList<>();
@@ -484,11 +518,12 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 批量写入 {@code Map<String, T>} 类型数据到 Redis Hash，并设置过期时间（秒）
+     * 批量写入{@code Map<String, T>}类型数据到Redis Hash，并设置过期时间（秒）
      * @param dataMap key {@code ->} 对象映射
      * @param targetType 对象类型
-     * @param expireTime 过期时间，秒，可为 null 表示不设置
+     * @param expireTime 过期时间，秒，可为null表示不设置
      * @param <T> 泛型
+     *
      */
     public static <T> void batchSaveAsRedisHash(Map<String, T> dataMap, Class<T> targetType, Long expireTime) {
         if (dataMap == null || dataMap.isEmpty()) {
@@ -535,5 +570,390 @@ public class NaCacheTemplate {
                 log.warn("Error closing Redis connection: {}", e.getMessage());
             }
         }
+    }
+
+    /**
+     * 递增操作
+     * @param key 键
+     * @param delta 要增加的值(必须大于0)
+     * @return 递增后的值
+     *
+     */
+    public Long incr(String key, long delta) {
+        if (delta < 0) {
+            throw new RuntimeException("递增因子必须大于0");
+        }
+        return redisTemplate.opsForValue().increment(key, delta);
+    }
+
+    /**
+     * 递减操作
+     * @param key 键
+     * @param delta 要减少的值(必须大于0)
+     * @return 递减后的值
+     *
+     */
+    public Long decr(String key, long delta) {
+        if (delta < 0) {
+            throw new RuntimeException("递减因子必须大于0");
+        }
+        return redisTemplate.opsForValue().increment(key, -delta);
+    }
+
+    /**
+     * 获取hashKey对应的所有键值
+     * @param key 键
+     * @return 对应的多个键值
+     *
+     */
+    public Map<Object, Object> hmget(String key) {
+        return redisTemplate.opsForHash().entries(key);
+    }
+
+    /**
+     * 批量存储Hash字段
+     * @param key 键
+     * @param map 对应多个键值
+     * @return true成功 false失败
+     *
+     */
+    public boolean hmSet(String key, Map<String, Object> map) {
+        try {
+            redisTemplate.opsForHash().putAll(key, map);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 批量存储Hash字段并设置时间
+     * @param key 键
+     * @param map 对应多个键值
+     * @param time 时间(秒)
+     * @return true成功 false失败
+     *
+     */
+    public boolean hmset(String key, Map<String, Object> map, long time) {
+        try {
+            redisTemplate.opsForHash().putAll(key, map);
+            if (time > 0) {
+                expire(key, time);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 删除Hash表中的一个字段
+     * @param key 键 不能为null
+     * @param hashKey 项 不能为null
+     *
+     */
+    public void hmDelete(String key, Object hashKey) {
+        redisTemplate.opsForHash().delete(key, hashKey);
+    }
+
+    /**
+     * 删除Hash表中的多个字段
+     * @param key 键 不能为null
+     * @param item 项 可以是多个 不能为null
+     *
+     */
+    public void hmDelete(String key, Object... item) {
+        redisTemplate.opsForHash().delete(key, item);
+    }
+
+    /**
+     * 判断Hash表中是否有该项的值
+     * @param key 键 不能为null
+     * @param item 项 不能为null
+     * @return true存在 false不存在
+     *
+     */
+    public boolean hHasKey(String key, String item) {
+        return redisTemplate.opsForHash().hasKey(key, item);
+    }
+
+    /**
+     * Hash字段递增
+     * @param key 键
+     * @param item 项
+     * @param by 要增加几(大于0)
+     * @return 递增后的值
+     *
+     */
+    public long hincr(String key, String item, long by) {
+        return redisTemplate.opsForHash().increment(key, item, by);
+    }
+
+    /**
+     * Hash字段递减
+     * @param key 键
+     * @param item 项
+     * @param by 要减少几(大于0)
+     * @return 递减后的值
+     *
+     */
+    public long hdecr(String key, String item, long by) {
+        return redisTemplate.opsForHash().increment(key, item, -by);
+    }
+
+    /**
+     * 向列表左侧添加元素
+     * @param key 键
+     * @param value 值
+     * @return 操作是否成功
+     *
+     */
+    public boolean lPush(String key, Object value) {
+        try {
+            redisTemplate.opsForList().leftPush(key, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 向列表左侧添加元素并设置过期时间
+     * @param key 键
+     * @param value 值
+     * @param time 时间(秒)
+     * @return 操作是否成功
+     *
+     */
+    public boolean lSet(String key, Object value, long time) {
+        try {
+            redisTemplate.opsForList().leftPush(key, value);
+            if (time > 0)
+                expire(key, time);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 从列表右侧弹出一个元素（阻塞式）
+     * @param k 键
+     * @param t 超时秒数
+     * @return 弹出的元素，如果超时返回null
+     *
+     */
+    public Object getRightPop(String k, Long t) {
+        return redisTemplate.opsForList().rightPop(k, t, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 获取列表长度
+     * @param key 键
+     * @return 列表长度
+     *
+     */
+    public Long getListSize(String key) {
+        try {
+            return redisTemplate.opsForList().size(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    /**
+     * 获取列表指定范围的元素
+     * @param key 键
+     * @param start 开始索引
+     * @param end 结束索引，0到-1代表所有元素
+     * @return 列表元素
+     *
+     */
+    public List<Object> lGet(String key, long start, long end) {
+        try {
+            return redisTemplate.opsForList().range(key, start, end);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 通过索引获取列表中的元素
+     * @param key 键
+     * @param index 索引，index {@code >=0 }时从头部开始，index{@code <}0时从尾部开始
+     * @return 列表元素
+     *
+     */
+    public Object lGetIndex(String key, long index) {
+        try {
+            return redisTemplate.opsForList().index(key, index);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 根据索引修改列表中的元素
+     * @param key 键
+     * @param index 索引
+     * @param value 值
+     * @return 操作是否成功
+     *
+     */
+    public boolean lUpdateIndex(String key, long index, Object value) {
+        try {
+            redisTemplate.opsForList().set(key, index, value);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 移除列表中指定值的元素
+     * @param key 键
+     * @param count 移除数量，正数从头部开始，负数从尾部开始，0移除所有
+     * @param value 值
+     * @return 移除的个数
+     *
+     */
+    public Long lRemove(String key, long count, Object value) {
+        try {
+            return redisTemplate.opsForList().remove(key, count, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    /**
+     * 根据key获取Set中的所有值
+     * @param key 键
+     * @return 集合中的所有值
+     *
+     */
+    public Set<Object> sGet(String key) {
+        try {
+            return redisTemplate.opsForSet().members(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 判断集合中是否存在指定值
+     * @param key 键
+     * @param value 值
+     * @return true存在 false不存在
+     *
+     */
+    public Boolean sHasKey(String key, Object value) {
+        try {
+            return redisTemplate.opsForSet().isMember(key, value);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 向集合中添加元素
+     * @param key 键
+     * @param values 值，可以是多个
+     * @return 成功添加的个数
+     *
+     */
+    public Long sSet(String key, Object... values) {
+        try {
+            return redisTemplate.opsForSet().add(key, values);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    /**
+     * 向集合中添加元素并设置过期时间
+     * @param key 键
+     * @param time 时间(秒)
+     * @param values 值，可以是多个
+     * @return 成功添加的个数
+     *
+     */
+    public Long sSetAndTime(String key, long time, Object... values) {
+        try {
+            Long count = redisTemplate.opsForSet().add(key, values);
+            if (time > 0)
+                expire(key, time);
+            return count;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    /**
+     * 获取集合的大小
+     * @param key 键
+     * @return 集合的大小
+     *
+     */
+    public Long sGetSetSize(String key) {
+        try {
+            return redisTemplate.opsForSet().size(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    /**
+     * 从集合中移除指定元素
+     * @param key 键
+     * @param values 值，可以是多个
+     * @return 移除的个数
+     *
+     */
+    public Long setRemove(String key, Object... values) {
+        try {
+            return redisTemplate.opsForSet().remove(key, values);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0L;
+        }
+    }
+
+    /**
+     * 向有序集合添加元素（适用于排行榜）
+     * @param key 键
+     * @param value 值
+     * @param score 分数，用于排序
+     *
+     */
+    public void zAdd(String key, Object value, double score) {
+        ZSetOperations<String, Object> zset = redisTemplate.opsForZSet();
+        zset.add(key, value, score);
+    }
+
+    /**
+     * 获取有序集合中指定分数范围的元素（适用于排行榜）
+     * @param key 键
+     * @param score 最小分数
+     * @param score1 最大分数
+     * @return 符合条件的元素集合
+     *
+     */
+    public Set<Object> rangeByScore(String key, double score, double score1) {
+        ZSetOperations<String, Object> zset = redisTemplate.opsForZSet();
+        return zset.rangeByScore(key, score, score1);
     }
 }
