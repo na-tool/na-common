@@ -217,14 +217,14 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行function，结果转成List<B>
+     * 获取指定类型数据，如果没有则执行function，结果转成{@code List<B> }
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型（通常为List.class）
      * @param function 缓存未命中时回调函数
      * @param itemClass 最终列表元素类型
      * @param <T> 缓存数据类型泛型
      * @param <B> 最终元素类型泛型
-     * @return List<B>转换后的列表
+     * @return {@code List<B> }转换后的列表
      *
      */
     public static <T, B> List<B> getCacheList(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
@@ -242,14 +242,14 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行function，结果转成Set<B>
+     * 获取指定类型数据，如果没有则执行function，结果转成{@code Set<B> }
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型
      * @param function 缓存未命中时回调函数
      * @param itemClass 最终元素类型
      * @param <T> 缓存数据泛型
      * @param <B> 最终元素泛型
-     * @return Set<B>转换后的集合
+     * @return {@code Set<B> }转换后的集合
      *
      */
     public static <T, B> Set<B> getCacheSet(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
@@ -267,14 +267,14 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行function，结果转成Deque<B>
+     * 获取指定类型数据，如果没有则执行function，结果转成{@code Deque<B>}
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型
      * @param function 缓存未命中时回调函数
      * @param itemClass 元素类型
      * @param <T> 缓存数据泛型
      * @param <B> 元素泛型
-     * @return Deque<B>转换后的双端队列
+     * @return {@code Deque<B>}转换后的双端队列
      *
      */
     public static <T, B> Deque<B> getCacheDeque(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
@@ -352,7 +352,7 @@ public class NaCacheTemplate {
      * @param key Redis键
      * @param item Hash字段名
      * @param value 字段值
-     * @param time 过期时间，秒，@code{>}0才生效
+     * @param time 过期时间，秒，{@code > }0才生效
      * @return 操作是否成功
      *
      */
@@ -370,7 +370,7 @@ public class NaCacheTemplate {
     /**
      * 设置键过期时间（秒）
      * @param key 键
-     * @param time 过期时间秒数，必须 @code{>}0
+     * @param time 过期时间秒数，必须 {@code >}0
      * @return 是否成功
      *
      */
@@ -518,8 +518,8 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 批量写入Map<String, T>类型数据到Redis Hash，并设置过期时间（秒）
-     * @param dataMap key @code{->} 对象映射
+     * 批量写入{@code Map<String, T>}类型数据到Redis Hash，并设置过期时间（秒）
+     * @param dataMap key {@code ->} 对象映射
      * @param targetType 对象类型
      * @param expireTime 过期时间，秒，可为null表示不设置
      * @param <T> 泛型
@@ -786,7 +786,7 @@ public class NaCacheTemplate {
     /**
      * 通过索引获取列表中的元素
      * @param key 键
-     * @param index 索引，index @code{>=0 }时从头部开始，index@code{<}0时从尾部开始
+     * @param index 索引，index {@code >=0 }时从头部开始，index{@code <}0时从尾部开始
      * @return 列表元素
      *
      */
