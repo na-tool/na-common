@@ -205,9 +205,9 @@ public class NaCacheTemplate {
      * <pre>
      * 案例:
      * // 如果缓存不存在，则从数据库加载用户信息
-     * User user = NaCacheTemplate.getCache("user:1001", User.class, () ->
-     *     userService.getUserById(1001)
-     * );
+     * User user = NaCacheTemplate.getCache("user:1001", User.class, () @code{-> }{
+     *     return userService.getUserById(1001);
+     * });
      * </pre>
      */
     public static <T> T getCache(String key, Class<T> tClass, Supplier<T> function) {
@@ -227,7 +227,7 @@ public class NaCacheTemplate {
      *
      * <pre>
      * 案例:
-     * List&lt;User&gt; userList = NaCacheTemplate.getCacheList("user:list:100", User.class);
+     * List<User> userList = NaCacheTemplate.getCacheList("user:list:100", User.class);
      * for (User user : userList) {
      *     // 处理用户列表
      * }
@@ -255,7 +255,7 @@ public class NaCacheTemplate {
      *
      * <pre>
      * 案例:
-     * Set&lt;Long&gt; userIdSet = NaCacheTemplate.getCacheSet("user:ids", Long.class);
+     * Set<Long> userIdSet = NaCacheTemplate.getCacheSet("user:ids", Long.class);
      * </pre>
      */
     public static <T> Set<T> getCacheSet(String key, Class<T> clazz) {
@@ -272,20 +272,20 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行function，结果转成List&lt;B&gt;
+     * 获取指定类型数据，如果没有则执行function，结果转成List<B>
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型（通常为List.class）
      * @param function 缓存未命中时回调函数
      * @param itemClass 最终列表元素类型
      * @param <T> 缓存数据类型泛型
      * @param <B> 最终元素类型泛型
-     * @return List&lt;B&gt;转换后的列表
+     * @return List<B>转换后的列表
      *
      * <pre>
      * 案例:
-     * List&lt;UserDTO&gt; users = NaCacheTemplate.getCacheList(
+     * List<UserDTO> users = NaCacheTemplate.getCacheList(
      *     "user:list", List.class,
-     *     () -> userService.findAllUsers(),
+     *     ()  @code{->} userService.findAllUsers(),
      *     UserDTO.class
      * );
      * </pre>
@@ -305,20 +305,20 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行function，结果转成Set&lt;B&gt;
+     * 获取指定类型数据，如果没有则执行function，结果转成Set<B>
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型
      * @param function 缓存未命中时回调函数
      * @param itemClass 最终元素类型
      * @param <T> 缓存数据泛型
      * @param <B> 最终元素泛型
-     * @return Set&lt;B&gt;转换后的集合
+     * @return Set<B>转换后的集合
      *
      * <pre>
      * 案例:
-     * Set&lt;RoleDTO&gt; roles = NaCacheTemplate.getCacheSet(
+     * Set<RoleDTO> roles = NaCacheTemplate.getCacheSet(
      *     "role:set", Set.class,
-     *     () -> roleService.findAllRoles(),
+     *     ()  @code{->} roleService.findAllRoles(),
      *     RoleDTO.class
      * );
      * </pre>
@@ -338,20 +338,20 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 获取指定类型数据，如果没有则执行function，结果转成Deque&lt;B&gt;
+     * 获取指定类型数据，如果没有则执行function，结果转成Deque<B>
      * @param key 缓存键
      * @param tClass 缓存数据的原始类型
      * @param function 缓存未命中时回调函数
      * @param itemClass 元素类型
      * @param <T> 缓存数据泛型
      * @param <B> 元素泛型
-     * @return Deque&lt;B&gt;转换后的双端队列
+     * @return Deque<B>转换后的双端队列
      *
      * <pre>
      * 案例:
-     * Deque&lt;MessageDTO&gt; messages = NaCacheTemplate.getCacheDeque(
+     * Deque<MessageDTO> messages = NaCacheTemplate.getCacheDeque(
      *     "message:queue", Deque.class,
-     *     () -> messageService.getRecentMessages(),
+     *     ()  @code{->} messageService.getRecentMessages(),
      *     MessageDTO.class
      * );
      * </pre>
@@ -378,7 +378,7 @@ public class NaCacheTemplate {
      * <pre>
      * 案例:
      * Long remainTime = NaCacheTemplate.getRemainingExpireTime("user:1001");
-     * if (remainTime != null && remainTime < 300000) { // 5分钟
+     * if (remainTime != null @code{ && }remainTime @code{ < }300000) { // 5分钟
      *     // 缓存即将过期，进行续期或重新加载
      * }
      * </pre>
@@ -450,7 +450,7 @@ public class NaCacheTemplate {
      * @param key Redis键
      * @param item Hash字段名
      * @param value 字段值
-     * @param time 过期时间，秒，>0才生效
+     * @param time 过期时间，秒，@code{>}0才生效
      * @return 操作是否成功
      *
      * <pre>
@@ -473,7 +473,7 @@ public class NaCacheTemplate {
     /**
      * 设置键过期时间（秒）
      * @param key 键
-     * @param time 过期时间秒数，必须>0
+     * @param time 过期时间秒数，必须 @code{>}0
      * @return 是否成功
      *
      * <pre>
@@ -614,7 +614,7 @@ public class NaCacheTemplate {
      * <pre>
      * 案例:
      * // 扫描所有订单哈希数据并转换为Order对象
-     * List&lt;Order&gt; orders = NaCacheTemplate.scanRedisHashData("order:*", 100, Order.class);
+     * List<Order> orders = NaCacheTemplate.scanRedisHashData("order:*", 100, Order.class);
      * </pre>
      */
     public static <T> List<T> scanRedisHashData(String keyPattern, int scanCount, Class<T> targetType) {
@@ -659,15 +659,15 @@ public class NaCacheTemplate {
     }
 
     /**
-     * 批量写入Map&lt;String, T&gt;类型数据到Redis Hash，并设置过期时间（秒）
-     * @param dataMap key -> 对象映射
+     * 批量写入Map<String, T>类型数据到Redis Hash，并设置过期时间（秒）
+     * @param dataMap key @code{->} 对象映射
      * @param targetType 对象类型
      * @param expireTime 过期时间，秒，可为null表示不设置
      * @param <T> 泛型
      *
      * <pre>
      * 案例:
-     * Map&lt;String, Order&gt; orderMap = new HashMap&lt;&gt;();
+     * Map<String, Order> orderMap = new HashMap<>();
      * orderMap.put("order:1001", new Order(1001, "商品A"));
      * orderMap.put("order:1002", new Order(1002, "商品B"));
      * // 批量存储订单数据，设置24小时过期
@@ -766,7 +766,7 @@ public class NaCacheTemplate {
      *
      * <pre>
      * 案例:
-     * Map&lt;Object, Object&gt; userFields = NaCacheTemplate.hmget("user:hash:1001");
+     * Map<Object, Object> userFields = NaCacheTemplate.hmget("user:hash:1001");
      * </pre>
      */
     public Map<Object, Object> hmget(String key) {
@@ -781,7 +781,7 @@ public class NaCacheTemplate {
      *
      * <pre>
      * 案例:
-     * Map&lt;String, Object&gt; userMap = new HashMap&lt;&gt;();
+     * Map<String, Object> userMap = new HashMap<>();
      * userMap.put("name", "张三");
      * userMap.put("age", 25);
      * NaCacheTemplate.hmSet("user:hash:1001", userMap);
@@ -806,7 +806,7 @@ public class NaCacheTemplate {
      *
      * <pre>
      * 案例:
-     * Map&lt;String, Object&gt; userMap = new HashMap&lt;&gt;();
+     * Map<String, Object> userMap = new HashMap<>();
      * userMap.put("name", "张三");
      * userMap.put("age", 25);
      * NaCacheTemplate.hmset("user:hash:1001", userMap, 3600);
@@ -994,7 +994,7 @@ public class NaCacheTemplate {
      * <pre>
      * 案例:
      * // 获取列表前10个元素
-     * List&lt;Object&gt; items = NaCacheTemplate.lGet("message:queue", 0, 9);
+     * List<Object> items = NaCacheTemplate.lGet("message:queue", 0, 9);
      * </pre>
      */
     public List<Object> lGet(String key, long start, long end) {
@@ -1009,7 +1009,7 @@ public class NaCacheTemplate {
     /**
      * 通过索引获取列表中的元素
      * @param key 键
-     * @param index 索引，index>=0时从头部开始，index<0时从尾部开始
+     * @param index 索引，index @code{>=0 }时从头部开始，index@code{<}0时从尾部开始
      * @return 列表元素
      *
      * <pre>
@@ -1080,7 +1080,7 @@ public class NaCacheTemplate {
      *
      * <pre>
      * 案例:
-     * Set&lt;Object&gt; tags = NaCacheTemplate.sGet("article:tags:1001");
+     * Set<Object> tags = NaCacheTemplate.sGet("article:tags:1001");
      * </pre>
      */
     public Set<Object> sGet(String key) {
@@ -1222,7 +1222,7 @@ public class NaCacheTemplate {
      * <pre>
      * 案例:
      * // 获取分数在80-100之间的用户
-     * Set&lt;Object&gt; topUsers = NaCacheTemplate.rangeByScore("user:ranking", 80, 100);
+     * Set<Object> topUsers = NaCacheTemplate.rangeByScore("user:ranking", 80, 100);
      * </pre>
      */
     public Set<Object> rangeByScore(String key, double score, double score1) {
