@@ -87,6 +87,73 @@ public class NaCacheTemplate {
     }
 
     /**
+     * 获取所有以指定前缀开头的缓存键对应的值
+     * @param prefix 键前缀
+     * @return 值集合
+     */
+    public static List<Object> getValuesByPrefix(String prefix) {
+        if (StringUtils.isBlank(prefix)) {
+            log.warn("getValuesByPrefix skipped: prefix is blank");
+            return Collections.emptyList();
+        }
+        Set<String> keys = redisTemplate.keys(prefix + "*");
+        if (keys == null || keys.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return redisTemplate.opsForValue().multiGet(keys);
+    }
+
+    /**
+     * 获取所有以指定前缀开头的缓存键对应的值
+     * @param prefix 键前缀
+     * @return 键值集合
+     */
+    public static Map<String, Object> getKeyValueByPrefix(String prefix) {
+        if (StringUtils.isBlank(prefix)) {
+            log.warn("getKeyValueByPrefix skipped: prefix is blank");
+            return Collections.emptyMap();
+        }
+        Set<String> keys = redisTemplate.keys(prefix + "*");
+        if (keys == null || keys.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+        Map<String, Object> result = new HashMap<>();
+        int i = 0;
+        for (String key : keys) {
+            result.put(key, values.get(i++));
+        }
+        return result;
+    }
+
+    /**
+     * 获取所有以指定前缀开头的缓存键
+     * @param prefix 键前缀
+     * @return 键集合
+     */
+    public static Set<String> getKeysByPrefix(String prefix,Integer count) {
+        if (prefix == null || prefix.isEmpty()) {
+            return Collections.emptySet();
+        }
+        if(count == null){
+            count =100;
+        }
+
+        Set<String> keys = new HashSet<>();
+        try (Cursor<byte[]> cursor = redisTemplate.getConnectionFactory().getConnection()
+                .scan(ScanOptions.scanOptions().match(prefix + "*").count(count).build())) {
+            while (cursor.hasNext()) {
+                keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+            }
+        } catch (Exception e) {
+            log.error("扫描 Redis keys 出错, prefix={}", prefix, e);
+        }
+        return keys;
+    }
+
+
+
+    /**
      * 存储对象为JSON字符串到Redis缓存（无过期时间）
      * @param key 缓存键
      * @param obj 缓存对象
