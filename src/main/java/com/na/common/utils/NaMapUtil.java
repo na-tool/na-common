@@ -8,8 +8,7 @@ import java.util.Map;
 
 public class NaMapUtil {
     /**
-     * 将任意对象转换为 Map<String, Object>
-     * 使用 fastjson 保留字段顺序
+     * 将任意对象转换为 {@code Map<String, Object>}，使用 fastjson 保留字段顺序。
      *
      * @param obj 任意对象（POJO、VO、Map 等）
      * @return LinkedHashMap，字段顺序与对象一致
