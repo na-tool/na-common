@@ -6,7 +6,12 @@ import java.nio.charset.StandardCharsets;
 
 public class NaHmacSHA256Util {
     /**
-     * HMAC-SHA256 算法
+     * 使用 HMAC-SHA256 算法对数据进行签名
+     *
+     * @param data 待签名的数据
+     * @param key  签名使用的密钥
+     * @return 生成的十六进制字符串签名
+     * @throws Exception 当算法或密钥初始化失败时抛出异常
      */
     public static String hmacSHA256(String data, String key) throws Exception {
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
