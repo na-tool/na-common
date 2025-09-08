@@ -95,15 +95,15 @@ public class NaJwtUtil {
      * @param secret 签名Key
      * @return 返回附属内容对象
      */
-    public static Claims parseTokenOld(String token, String secret) {
+    public static String parseTokenOld(String token, String secret) {
         Claims claims;
         try {
             claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
             String subject = claims.getSubject();
+            return subject;
         } catch (Exception e) {
             log.error("JWT token parse exception", e);
-            claims = null;
         }
-        return claims;
+        return null;
     }
 }
