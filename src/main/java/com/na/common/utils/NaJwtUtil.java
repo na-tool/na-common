@@ -1,5 +1,6 @@
 package com.na.common.utils;
 
+import com.alibaba.fastjson.JSONObject;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -44,5 +45,65 @@ public class NaJwtUtil {
             System.out.println("Invalid or expired JWT: " + e.getMessage());
             return null;
         }
+    }
+
+    public static String generateToken(String subject, String salt) {
+        return Jwts.builder()
+                .setSubject(subject)
+                .signWith(SignatureAlgorithm.HS512, salt)
+                .compact();
+    }
+
+    public static String generateTokenOld(String subject, String salt, long ttlMillis) {
+        long nowMillis = System.currentTimeMillis();//生成JWT的时间
+        Date now = new Date(nowMillis);
+        return Jwts.builder()
+                .setSubject(subject)
+                .setIssuedAt(now)
+                .signWith(SignatureAlgorithm.HS256, salt)
+                .setExpiration(new Date(nowMillis+ttlMillis))
+                .compact();
+    }
+
+    /**
+     * 用于JWT token 分析 附属内容
+     * @param token 被分析的token
+     * @param secret 签名Key
+     * @param type 串行类型
+     * @param <T> 泛型
+     * @return 返回附属内容对象
+     */
+    public static <T> T parseJwtPayloadInformation(String token, String secret, Class<T> type) {
+        T model = null;
+        try {
+            Claims claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+            String subject = claims.getSubject();
+            model = JSONObject.parseObject(subject, type);
+        }
+        catch (Exception e) {
+            log.error("JWT token parse exception", e);
+            model = null;
+        }
+
+        return model;
+    }
+
+    /**
+     * 用于JWT token 分析 附属内容
+     *
+     * @param token  被分析的token
+     * @param secret 签名Key
+     * @return 返回附属内容对象
+     */
+    public static Claims parseTokenOld(String token, String secret) {
+        Claims claims;
+        try {
+            claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+            String subject = claims.getSubject();
+        } catch (Exception e) {
+            log.error("JWT token parse exception", e);
+            claims = null;
+        }
+        return claims;
     }
 }
