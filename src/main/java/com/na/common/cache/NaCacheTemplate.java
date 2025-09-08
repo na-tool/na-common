@@ -129,6 +129,7 @@ public class NaCacheTemplate {
     /**
      * 获取所有以指定前缀开头的缓存键
      * @param prefix 键前缀
+     * @param count 键数量
      * @return 键集合
      */
     public static Set<String> getKeysByPrefix(String prefix,Integer count) {
@@ -417,7 +418,7 @@ public class NaCacheTemplate {
     /**
      * Redis Hash 获取所有字段和值
      * @param key Redis键
-     * @return Map<字段名, 值>
+     * @return map集合
      */
     @SuppressWarnings("unchecked")
     public static Map<String, String> hgetAll(String key) {
