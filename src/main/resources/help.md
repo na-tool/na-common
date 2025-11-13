@@ -1129,3 +1129,106 @@ na:
 如果你的包名不是以com.na开头的，需要配置
 @ComponentScan(basePackages = {"com.na", "com.ziji.baoming"}) // 扫描多个包路径
 ```
+
+
+### 其他
+###### 1. 支付宝
+```
+支付宝pc授权登录  如果有auth_code则可以改成授权支付宝APP登陆
+    @Override
+    public R zfbPCAuthBind(String phone) throws UnsupportedEncodingException {
+        String redirectUri= "http://mdb63ff6.natappfree.cc/playlet-service/api/app/user/zfbPCAuthBindReturn";
+        // 对回调URL进行编码
+        String encodedRedirectUri = URLEncoder.encode(redirectUri, StandardCharsets.UTF_8.name());
+
+        // 构建基础参数（沙箱环境需替换基础URL）
+        StringBuilder urlBuilder = new StringBuilder("https://openauth.alipay.com/oauth2/publicAppAuthorize.htm");
+        urlBuilder.append("?app_id=").append(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_APP_ID).toString())
+                .append("&scope=auth_user") // 权限范围正确
+                .append("&redirect_uri=").append(encodedRedirectUri);
+
+        // 生成更安全的state（避免直接使用手机号明文编码）
+        String state = phone;
+        String encodedState = Base64.getEncoder().encodeToString(state.getBytes(StandardCharsets.UTF_8));
+        urlBuilder.append("&state=").append(encodedState);
+
+        return R.successNotMsg(urlBuilder.toString());
+    }
+
+    @Override
+    public R zfbPCAuthBindReturn(HttpServletRequest request) throws AlipayApiException, IOException {
+        Map<String, String> params = new HashMap<>();
+        Map<String, String[]> requestParams = request.getParameterMap();
+        for (String name : requestParams.keySet()) {
+            String[] values = requestParams.get(name);
+            StringBuilder valueStr = new StringBuilder();
+            for (int i = 0; i < values.length; i++) {
+                valueStr.append(i == values.length - 1 ? values[i] : values[i] + ",");
+            }
+            params.put(name, valueStr.toString());
+        }
+        if(params.containsKey("auth_code") && params.containsKey("state")){
+            return R.successNotMsg(params.get("auth_code"));
+//            AlipaySystemOauthTokenResponse response = MyCommonUtil.getZFBAuth((params.get("auth_code")));
+//            if(!response.isSuccess()){
+//                return R.error(response.getMsg());
+//            }
+//            // 解码回来
+//            byte[] decodedBytes = Base64.getDecoder().decode(params.get("state"));
+//            String phone = new String(decodedBytes, StandardCharsets.UTF_8);
+//            String openId = response.getOpenId();
+//            System.out.println(1111);
+//            AlipayUserInfoShareResponse zfbResponse = MyCommonUtil.getZFBUserInfo(response.getAccessToken());
+//            if(!zfbResponse.isSuccess()){
+//                return R.error(response.getMsg());
+//            }
+//            String avatar = zfbResponse.getAvatar();
+//            String nickName = zfbResponse.getNickName();
+//            System.out.println(2222);
+
+        }
+        return R.error("支付宝PC端授权回调失败");
+    }
+    
+    
+    
+        public static NaAutoPayConfig getAliPayConfig() { // 生成随机字符串
+        return NaAutoPayConfig.builder()
+                .aliAppId(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_APP_ID).toString())
+                .aliAppPrivateKey(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_PRIVATE_KEY).toString())
+                .aliPublicKey(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_PUBLIC_KEY).toString())
+                .aliNotifyUrl(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_NOTIFY_URL).toString())
+                .aliAppCertPublicKey(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_CERT_APP_PUBLIC_KEY).toString())
+                .aliCertPublicKey(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_CERT_PUBLIC_KEY).toString())
+                .aliRootCert(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_PAY_CERT_ROOT).toString())
+                .aliReturnUrl(NaCacheTemplate.hget(CacheSysConfigConst.CONFIG_LIST, CacheSysConfigConst.ALI_RETURN_URL).toString())
+//                    .aliAppCertPublicKey("D:\\cert\\playlet\\ali\\appCertPublicKey_2021005136682286.crt")
+//                    .aliCertPublicKey("D:\\cert\\playlet\\ali\\alipayCertPublicKey_RSA2.crt")
+//                    .aliRootCert("D:\\cert\\playlet\\ali\\alipayRootCert.crt")
+                .aliCert(true)
+                .aliCertProject(false)
+                .build();
+    }
+    
+     public static AlipaySystemOauthTokenResponse getZFBAuth(String code) throws AlipayApiException, IOException {
+        // 初始化SDK（需确保配置包含appId、私钥、支付宝公钥、网关等）
+        AlipayClient alipayClient = MyCommonUtil.createClient(MyCommonUtil.getAliPayConfig());
+
+        // 构造请求参数
+        AlipaySystemOauthTokenRequest request = new AlipaySystemOauthTokenRequest();
+        // 授权方式：通过授权码获取令牌
+        request.setGrantType("authorization_code");
+        // 传入前端获取的授权码（code）
+        request.setCode(code);
+        // 注意：此处无需设置refreshToken（仅refresh_token模式需要）
+
+        return MyCommonUtil.getAliPayConfig().isAliCert() ? alipayClient.certificateExecute(request) : alipayClient.execute(request);
+    }
+
+    public static AlipayUserInfoShareResponse getZFBUserInfo(String accessToken) throws AlipayApiException, IOException {
+        AlipayClient alipayClient = MyCommonUtil.createClient(MyCommonUtil.getAliPayConfig());
+        AlipayUserInfoShareRequest zfbRequest = new AlipayUserInfoShareRequest();
+        return MyCommonUtil.getAliPayConfig().isAliCert() ? alipayClient.certificateExecute(zfbRequest,accessToken)
+                :alipayClient.execute(zfbRequest,accessToken);
+    }
+```

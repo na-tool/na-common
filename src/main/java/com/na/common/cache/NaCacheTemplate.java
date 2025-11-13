@@ -129,6 +129,7 @@ public class NaCacheTemplate {
     /**
      * 获取所有以指定前缀开头的缓存键
      * @param prefix 键前缀
+     * @param count 键数量
      * @return 键集合
      */
     public static Set<String> getKeysByPrefix(String prefix,Integer count) {
@@ -411,6 +412,38 @@ public class NaCacheTemplate {
         } catch (Exception e) {
             log.error("HSET error - key: {}, item: {}, value: {}", key, item, value, e);
             return false;
+        }
+    }
+
+    /**
+     * Redis Hash 获取所有字段和值
+     * @param key Redis键
+     * @return map集合
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, String> hgetAll(String key) {
+        if (StringUtils.isBlank(key)) {
+            log.warn("hgetAll skipped: key is blank");
+            return Collections.emptyMap();
+        }
+        try {
+            Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
+            if (entries == null || entries.isEmpty()) {
+                return Collections.emptyMap();
+            }
+            // 转换成 Map<String, String>
+            Map<String, String> result = new HashMap<>();
+            for (Map.Entry<Object, Object> entry : entries.entrySet()) {
+                result.put(
+                        Objects.toString(entry.getKey(), null),
+                        Objects.toString(entry.getValue(), null)
+                );
+            }
+            log.info("HGETALL - key: {}, size: {}", key, result.size());
+            return result;
+        } catch (Exception e) {
+            log.error("HGETALL error - key: {}", key, e);
+            return Collections.emptyMap();
         }
     }
 

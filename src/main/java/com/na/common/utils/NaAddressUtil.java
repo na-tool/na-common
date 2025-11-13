@@ -1,6 +1,7 @@
 package com.na.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -11,6 +12,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
+import java.util.Objects;
 
 /**
  * 访问地址工具类：用于获取客户端真实 IP 地址（支持代理场景、本地回环）
@@ -84,6 +86,51 @@ public class NaAddressUtil {
                 } catch (UnknownHostException ignored) {
                     log.warn("无法解析本机 IP，返回默认 127.0.0.1");
                 }
+            }
+
+            return ip;
+        } catch (Exception e) {
+            log.warn("获取客户端 IP 异常: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * WebFlux / Gateway 获取客户端真实 IP
+     */
+    public static String getIpAddress(ServerHttpRequest request) {
+        if (request == null) {
+            return "";
+        }
+
+        try {
+            String ip = null;
+
+            for (String header : IP_HEADER_NAMES) {
+                String headerValue = request.getHeaders().getFirst(header);
+                if (headerValue != null && !headerValue.isEmpty() && !"unknown".equalsIgnoreCase(headerValue)) {
+                    ip = headerValue;
+                    break;
+                }
+            }
+
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = Objects.requireNonNull(request.getRemoteAddress(), "获取请求者IP地址为null")
+                        .getAddress().getHostAddress();
+
+                if ("127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+                    try {
+                        InetAddress inet = InetAddress.getLocalHost();
+                        ip = inet.getHostAddress();
+                    } catch (UnknownHostException ignored) {
+                        log.warn("无法解析本机 IP，返回默认 127.0.0.1");
+                        ip = "127.0.0.1";
+                    }
+                }
+            }
+
+            if (ip != null && ip.contains(",")) {
+                ip = ip.split(",")[0].trim();
             }
 
             return ip;
