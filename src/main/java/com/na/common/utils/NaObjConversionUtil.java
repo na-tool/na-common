@@ -54,6 +54,9 @@ public class NaObjConversionUtil {
 
     public static <T> T copyProperties(Object source, Class<T> targetType) {
         try {
+            if(source == null || targetType == null){
+                return null;
+            }
             T target = targetType.getDeclaredConstructor().newInstance();
             beanUtils.copyProperties(target, source);
             return target;
@@ -65,6 +68,9 @@ public class NaObjConversionUtil {
     }
 
     public static <T> List<T> copyPropertiesList(List<?> sourceList, Class<T> targetType) {
+        if (sourceList == null || sourceList.isEmpty() || targetType == null) {
+            return new ArrayList<>(); // ✅ 返回空列表，而不是 null
+        }
         List<T> targetList = new ArrayList<>();
         for (Object source : sourceList) {
             T t = copyProperties(source, targetType);
@@ -85,7 +91,7 @@ public class NaObjConversionUtil {
      * @param <T> 类型参数
      */
     public static <T> void copyNonNullAndNonEmptyFields(T source, T target, Class<T> clazz) {
-        if (source == null || target == null) return;
+        if (source == null || target == null) {return;}
 
         Map<String, Object> map = objectMapper.convertValue(source, Map.class);
 
@@ -114,7 +120,7 @@ public class NaObjConversionUtil {
      * @param target 目标对象，字段会被复制到此对象
      */
     public static <T> void overwriteNonNullAndNonEmptyFields(T source, T target) {
-        if (source == null || target == null) return;
+        if (source == null || target == null) {return;}
 
         List<Field> fields = getAllFields(source.getClass());
 
