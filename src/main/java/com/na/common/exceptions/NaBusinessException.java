@@ -1,5 +1,6 @@
 package com.na.common.exceptions;
 
+import com.na.common.result.enums.INaStatusProvider;
 import com.na.common.result.enums.NaStatus;
 import org.springframework.http.HttpStatus;
 
@@ -14,7 +15,7 @@ public class NaBusinessException extends RuntimeException {
         this.httpStatus = resolveHttpStatus(httpStatus);
     }
 
-    public NaBusinessException(NaStatus status, HttpStatus httpStatus) {
+    public NaBusinessException(INaStatusProvider status, HttpStatus httpStatus) {
         super(status.getMsg());
         this.httpStatus = resolveHttpStatus(httpStatus);
     }
