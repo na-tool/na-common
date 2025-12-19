@@ -15,6 +15,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -28,7 +30,14 @@ import java.util.concurrent.TimeUnit;
 @Aspect
 @Component
 @Slf4j
+@ConditionalOnProperty(
+        name = {"na.submit"},
+        matchIfMissing = false
+)
 public class NaNoRepeatSubmitIPAOP {
+
+    @Autowired
+    private NaCacheTemplate naCacheTemplate;
 
     // 定义切点，匹配所有标注了NaNoRepeatSubmitIPAOP注解的方法
     @Pointcut("@annotation(com.na.common.annotation.NaNoRepeatSubmitIP)")
@@ -74,10 +83,10 @@ public class NaNoRepeatSubmitIPAOP {
 
         int cacheNum = 0;
         // 检查缓存中是否存在该请求
-        Integer cache = NaCacheTemplate.getCache(key, Integer.class);
+        Integer cache = naCacheTemplate.getCache(key, Integer.class);
         if(cache != null){
             cacheNum = cache;
-            Long remainingExpireTime = NaCacheTemplate.getRemainingExpireTime(key);
+            Long remainingExpireTime = naCacheTemplate.getRemainingExpireTime(key);
             if (cacheNum >= num) {
                 log.warn("重复请求: {}", key);
                 String msg = annotation.msg();
@@ -93,7 +102,7 @@ public class NaNoRepeatSubmitIPAOP {
         }
 
         // 设置缓存，防止重复请求
-        NaCacheTemplate.setCache(key, (cacheNum + 1), expire, TimeUnit.MILLISECONDS);
+        naCacheTemplate.setCache(key, (cacheNum + 1), expire, TimeUnit.MILLISECONDS);
 
         // 继续执行被拦截的方法
         return pjp.proceed();
