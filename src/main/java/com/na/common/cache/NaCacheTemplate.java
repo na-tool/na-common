@@ -7,8 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.na.common.utils.NaSpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.*;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -21,21 +23,19 @@ import java.util.function.Supplier;
  * 支持分布式锁、缓存过期管理和批量操作
  */
 @Slf4j
+@Component
+@ConditionalOnProperty(
+        name = {"spring.redis.host"},
+        matchIfMissing = false
+)
 public class NaCacheTemplate {
 
-    /**
-     * Redis模板实例，通过Spring上下文获取
-     */
-    private static RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ValueOperations<String, Object> valueRedis;
 
-    /**
-     * Redis字符串操作对象
-     */
-    private static ValueOperations<String, Object> valueRedis;
-
-    static {
-        redisTemplate = NaSpringContextUtil.getBean("redisTemplate", RedisTemplate.class);
-        valueRedis = redisTemplate.opsForValue();
+    public NaCacheTemplate(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+        this.valueRedis = redisTemplate.opsForValue();
     }
 
     /**
@@ -43,7 +43,7 @@ public class NaCacheTemplate {
      * @param key 缓存键
      *
      */
-    public static void clear(String key) {
+    public void clear(String key) {
         if (StringUtils.isBlank(key)) {
             log.warn("clear skipped: key is blank");
             return;
@@ -56,7 +56,7 @@ public class NaCacheTemplate {
      * @param prefix 键前缀
      *
      */
-    public static void clearByPrefix(String prefix) {
+    public void clearByPrefix(String prefix) {
         if (StringUtils.isBlank(prefix)) {
             log.warn("clearByPrefix skipped: prefix is blank");
             return;
@@ -72,7 +72,7 @@ public class NaCacheTemplate {
      * @param pattern 键中包含的字符串
      *
      */
-    public static void clearKeysWithPattern(String pattern) {
+    public void clearKeysWithPattern(String pattern) {
         if (StringUtils.isBlank(pattern)) {
             log.warn("clearKeysWithPattern skipped: pattern is blank");
             return;
@@ -91,7 +91,7 @@ public class NaCacheTemplate {
      * @param prefix 键前缀
      * @return 值集合
      */
-    public static List<Object> getValuesByPrefix(String prefix) {
+    public List<Object> getValuesByPrefix(String prefix) {
         if (StringUtils.isBlank(prefix)) {
             log.warn("getValuesByPrefix skipped: prefix is blank");
             return Collections.emptyList();
@@ -108,7 +108,7 @@ public class NaCacheTemplate {
      * @param prefix 键前缀
      * @return 键值集合
      */
-    public static Map<String, Object> getKeyValueByPrefix(String prefix) {
+    public Map<String, Object> getKeyValueByPrefix(String prefix) {
         if (StringUtils.isBlank(prefix)) {
             log.warn("getKeyValueByPrefix skipped: prefix is blank");
             return Collections.emptyMap();
@@ -132,7 +132,7 @@ public class NaCacheTemplate {
      * @param count 键数量
      * @return 键集合
      */
-    public static Set<String> getKeysByPrefix(String prefix,Integer count) {
+    public Set<String> getKeysByPrefix(String prefix,Integer count) {
         if (prefix == null || prefix.isEmpty()) {
             return Collections.emptySet();
         }
@@ -161,7 +161,7 @@ public class NaCacheTemplate {
      * @param <T> 对象类型
      *
      */
-    public static <T> void setCache(String key, T obj) {
+    public <T> void setCache(String key, T obj) {
         if (StringUtils.isBlank(key)) {
             log.warn("setCache skipped: key is blank");
             return;
@@ -178,7 +178,7 @@ public class NaCacheTemplate {
      * @param <T> 对象类型
      *
      */
-    public static <T> void setCache(String key, T obj, Long time, TimeUnit timeUnit) {
+    public <T> void setCache(String key, T obj, Long time, TimeUnit timeUnit) {
         if (StringUtils.isBlank(key)) {
             log.warn("setCache with expire skipped: key is blank");
             return;
@@ -196,7 +196,7 @@ public class NaCacheTemplate {
      * @return JSON字符串，找不到返回null
      *
      */
-    public static String getCache(String key) {
+    public String getCache(String key) {
         if (StringUtils.isBlank(key)) {
             log.warn("getCache skipped: key is blank");
             return null;
@@ -212,7 +212,7 @@ public class NaCacheTemplate {
      * @return 目标类型对象，找不到或解析失败返回null
      *
      */
-    public static <T> T getCache(String key, Class<T> tClass) {
+    public <T> T getCache(String key, Class<T> tClass) {
         String cache = getCache(key);
         if (cache == null) {
             return null;
@@ -234,7 +234,7 @@ public class NaCacheTemplate {
      * @return 缓存数据或回调结果
      *
      */
-    public static <T> T getCache(String key, Class<T> tClass, Supplier<T> function) {
+    public <T> T getCache(String key, Class<T> tClass, Supplier<T> function) {
         T cache = getCache(key, tClass);
         if (cache != null) {
             return cache;
@@ -250,7 +250,7 @@ public class NaCacheTemplate {
      * @return List，缓存为空返回空列表
      *
      */
-    public static <T> List<T> getCacheList(String key, Class<T> tClass) {
+    public <T> List<T> getCacheList(String key, Class<T> tClass) {
         String cache = getCache(key);
         if (cache == null) {
             return Collections.emptyList();
@@ -271,7 +271,7 @@ public class NaCacheTemplate {
      * @return Set，找不到或解析失败返回null
      *
      */
-    public static <T> Set<T> getCacheSet(String key, Class<T> clazz) {
+    public <T> Set<T> getCacheSet(String key, Class<T> clazz) {
         String cache = getCache(key);
         if (cache == null) {
             return null;
@@ -295,7 +295,7 @@ public class NaCacheTemplate {
      * @return {@code List<B> }转换后的列表
      *
      */
-    public static <T, B> List<B> getCacheList(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
+    public <T, B> List<B> getCacheList(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
         T cache = getCache(key, tClass, function);
         List<B> result = new ArrayList<>();
         if (cache instanceof Collection) {
@@ -320,7 +320,7 @@ public class NaCacheTemplate {
      * @return {@code Set<B> }转换后的集合
      *
      */
-    public static <T, B> Set<B> getCacheSet(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
+    public <T, B> Set<B> getCacheSet(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
         T cache = getCache(key, tClass, function);
         Set<B> result = new HashSet<>();
         if (cache instanceof Collection) {
@@ -345,7 +345,7 @@ public class NaCacheTemplate {
      * @return {@code Deque<B>}转换后的双端队列
      *
      */
-    public static <T, B> Deque<B> getCacheDeque(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
+    public <T, B> Deque<B> getCacheDeque(String key, Class<T> tClass, Supplier<T> function, Class<B> itemClass) {
         T cache = getCache(key, tClass, function);
         Deque<B> result = new LinkedList<>();
         if (cache instanceof Collection) {
@@ -365,7 +365,7 @@ public class NaCacheTemplate {
      * @return 剩余时间毫秒，null表示不存在，-1表示无过期时间
      *
      */
-    public static Long getRemainingExpireTime(String key) {
+    public Long getRemainingExpireTime(String key) {
         if (StringUtils.isBlank(key)) {
             log.warn("getRemainingExpireTime skipped: key is blank");
             return null;
@@ -385,7 +385,7 @@ public class NaCacheTemplate {
      * @return true存在，false不存在或key为空
      *
      */
-    public static boolean exists(String key) {
+    public boolean exists(String key) {
         if (StringUtils.isBlank(key)) {
             return false;
         }
@@ -400,7 +400,7 @@ public class NaCacheTemplate {
      * @return 操作是否成功
      *
      */
-    public static boolean hset(String key, String item, Object value) {
+    public boolean hset(String key, String item, Object value) {
         if (StringUtils.isBlank(key) || StringUtils.isBlank(item)) {
             log.warn("hset skipped: key or item is blank");
             return false;
@@ -421,7 +421,7 @@ public class NaCacheTemplate {
      * @return map集合
      */
     @SuppressWarnings("unchecked")
-    public static Map<String, String> hgetAll(String key) {
+    public Map<String, String> hgetAll(String key) {
         if (StringUtils.isBlank(key)) {
             log.warn("hgetAll skipped: key is blank");
             return Collections.emptyMap();
@@ -456,7 +456,7 @@ public class NaCacheTemplate {
      * @return 操作是否成功
      *
      */
-    public static boolean hset(String key, String item, Object value, long time) {
+    public boolean hset(String key, String item, Object value, long time) {
         if (time <= 0) {
             return hset(key, item, value);
         }
@@ -474,7 +474,7 @@ public class NaCacheTemplate {
      * @return 是否成功
      *
      */
-    public static boolean expire(String key, long time) {
+    public boolean expire(String key, long time) {
         if (time <= 0 || StringUtils.isBlank(key)) {
             log.warn("expire skipped: time <= 0 or key is blank");
             return false;
@@ -495,7 +495,7 @@ public class NaCacheTemplate {
      * @return 字段数量，异常返回null
      *
      */
-    public static Long getHashSize(String key) {
+    public Long getHashSize(String key) {
         if (StringUtils.isBlank(key)) {
             log.warn("getHashSize skipped: key is blank");
             return null;
@@ -517,7 +517,7 @@ public class NaCacheTemplate {
      * @return 字段值，异常或无效参数返回null
      *
      */
-    public static Object hget(String key, String item) {
+    public Object hget(String key, String item) {
         if (StringUtils.isBlank(key) || StringUtils.isBlank(item)) {
             log.warn("hget skipped: key or item is blank");
             return null;
@@ -540,7 +540,7 @@ public class NaCacheTemplate {
      * @return 是否成功获取锁
      *
      */
-    public static boolean tryLock(String lockKey, long timeout, TimeUnit unit) {
+    public boolean tryLock(String lockKey, long timeout, TimeUnit unit) {
         if (StringUtils.isBlank(lockKey) || timeout <= 0) {
             log.warn("tryLock skipped: lockKey blank or timeout invalid");
             return false;
@@ -555,7 +555,7 @@ public class NaCacheTemplate {
      * @return 是否成功释放
      *
      */
-    public static boolean releaseLock(String lockKey) {
+    public boolean releaseLock(String lockKey) {
         if (StringUtils.isBlank(lockKey)) {
             log.warn("releaseLock skipped: lockKey is blank");
             return false;
@@ -576,7 +576,7 @@ public class NaCacheTemplate {
      * @return 转换后的列表，异常时返回空列表
      *
      */
-    public static <T> List<T> scanRedisHashData(String keyPattern, int scanCount, Class<T> targetType) {
+    public <T> List<T> scanRedisHashData(String keyPattern, int scanCount, Class<T> targetType) {
         List<T> result = new ArrayList<>();
         RedisConnection connection = null;
         Cursor<byte[]> cursor = null;
@@ -625,7 +625,7 @@ public class NaCacheTemplate {
      * @param <T> 泛型
      *
      */
-    public static <T> void batchSaveAsRedisHash(Map<String, T> dataMap, Class<T> targetType, Long expireTime) {
+    public <T> void batchSaveAsRedisHash(Map<String, T> dataMap, Class<T> targetType, Long expireTime) {
         if (dataMap == null || dataMap.isEmpty()) {
             log.warn("batchSaveAsRedisHash skipped: dataMap is empty");
             return;

@@ -39,6 +39,8 @@ public class NaNoRepeatSubmitAOP {
     private Environment environment;
     @Autowired
     private INaNoRepeatSubmitUserService naNoRepeatSubmitUserService;
+    @Autowired
+    private NaCacheTemplate naCacheTemplate;
 
     // 定义切点，匹配所有标注了@NaNoRepeatSubmit注解的方法
     @Pointcut("@annotation(com.na.common.annotation.NaNoRepeatSubmit)")
@@ -87,10 +89,10 @@ public class NaNoRepeatSubmitAOP {
 
         int cacheNum = 0;
         // 检查缓存中是否存在该请求
-        Integer cache = NaCacheTemplate.getCache(key, Integer.class);
+        Integer cache = naCacheTemplate.getCache(key, Integer.class);
         if(cache != null){
             cacheNum = cache;
-            Long remainingExpireTime = NaCacheTemplate.getRemainingExpireTime(key);
+            Long remainingExpireTime = naCacheTemplate.getRemainingExpireTime(key);
             if (cacheNum >= num) {
                 log.warn("重复请求: {}", key);
                 String msg = annotation.msg();
@@ -107,7 +109,7 @@ public class NaNoRepeatSubmitAOP {
 
 
         // 设置缓存，防止重复请求
-        NaCacheTemplate.setCache(key, (cacheNum + 1), expire, TimeUnit.MILLISECONDS);
+        naCacheTemplate.setCache(key, (cacheNum + 1), expire, TimeUnit.MILLISECONDS);
 
         // 继续执行被拦截的方法
         return pjp.proceed();
