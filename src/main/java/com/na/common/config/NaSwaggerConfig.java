@@ -1,6 +1,5 @@
 package com.na.common.config;
 
-import com.google.common.collect.Lists;
 import com.na.common.constant.INaGlobalConst;
 import com.na.common.result.enums.NaStatus;
 import org.apache.commons.lang3.StringUtils;
@@ -75,10 +74,17 @@ public class NaSwaggerConfig {
     }
 
     protected List<SecurityReference> defaultAuth() {
-        AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
-        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
-        authorizationScopes[0] = authorizationScope;
-        return Lists.newArrayList(new SecurityReference("认证令牌", authorizationScopes), new SecurityReference("请求来源", authorizationScopes));
+//        AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
+//        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
+//        authorizationScopes[0] = authorizationScope;
+//        return Lists.newArrayList(new SecurityReference("认证令牌", authorizationScopes), new SecurityReference("请求来源", authorizationScopes));
+        AuthorizationScope[] authorizationScopes = { new AuthorizationScope("global", "accessEverything") };
+
+        List<SecurityReference> refs = new ArrayList<>();
+        refs.add(new SecurityReference("认证令牌", authorizationScopes));
+        refs.add(new SecurityReference("请求来源", authorizationScopes));
+
+        return refs;
     }
 
     protected Predicate<RequestHandler> multiplePackagePredicate() {
