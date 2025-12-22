@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.*;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -566,6 +567,61 @@ public class NaCacheTemplate {
         }
         return false;
     }
+
+    /**
+     * 尝试获取分布式锁
+     *
+     * @param lockKey       锁 key
+     * @param value     唯一标识（UUID）
+     * @param timeout   过期时间
+     * @param unit      时间单位
+     * @return 是否获取成功
+     */
+    public boolean tryLock(String lockKey, String value, long timeout, TimeUnit unit) {
+        if (StringUtils.isBlank(lockKey) || StringUtils.isBlank(value) || timeout <= 0) {
+            log.warn("tryLock skipped: lockKey blank or value or timeout invalid");
+            return false;
+        }
+        Boolean success = redisTemplate.opsForValue().setIfAbsent(
+                lockKey,
+                value,
+                timeout,
+                unit
+        );
+        return Boolean.TRUE.equals(success);
+    }
+
+    /**
+     * 释放分布式锁（只释放自己持有的锁）
+     *
+     * @param lockKey   锁 key
+     * @param value 唯一标识（UUID）
+     */
+    public boolean releaseLock(String lockKey, String value) {
+        if (StringUtils.isBlank(lockKey) || StringUtils.isBlank(value)) {
+            log.warn("releaseLock skipped: lockKey or value is blank");
+            return false;
+        }
+
+        String luaScript =
+                "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                        "   return redis.call('del', KEYS[1]) " +
+                        "else " +
+                        "   return 0 " +
+                        "end";
+
+        RedisScript<Long> redisScript = RedisScript.of(luaScript, Long.class);
+
+        Long result = redisTemplate.execute(
+                redisScript,
+                Collections.singletonList(lockKey),
+                value
+        );
+
+        return result != null && result > 0;
+    }
+
+
 
     /**
      * 扫描匹配的Redis Hash键，将其转换为指定类型列表
