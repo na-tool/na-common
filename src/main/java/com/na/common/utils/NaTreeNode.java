@@ -7,5 +7,9 @@ public interface NaTreeNode<ID> {
     ID getParentId();          // 获取父节点ID
     Integer getOrderNum();       // 获取排序号
     void setChildren(List<? extends NaTreeNode<ID>> children);  // 设置子节点列表
+    List<? extends NaTreeNode<ID>> getChildren();
+
+    Integer getLevel();              // 当前层级
+    void setLevel(Integer level);    // 设置层级
 }
 

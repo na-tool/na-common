@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
@@ -153,6 +154,39 @@ public class NaCacheTemplate {
         return keys;
     }
 
+    /**
+     * 分页查询 key
+     *
+     * @param patternKey key
+     * @param page       页码
+     * @param size       每页数目
+     * @return /
+     */
+    public List<String> findKeysForPage(String patternKey, int page, int size) {
+        ScanOptions options = ScanOptions.scanOptions().match(patternKey).build();
+        RedisConnectionFactory factory = redisTemplate.getConnectionFactory();
+        RedisConnection rc = Objects.requireNonNull(factory).getConnection();
+        Cursor<byte[]> cursor = rc.scan(options);
+        List<String> result = new ArrayList<>(size);
+        int tmpIndex = 0;
+        int fromIndex = page * size;
+        int toIndex = page * size + size;
+        while (cursor.hasNext()) {
+            if (tmpIndex >= fromIndex && tmpIndex < toIndex) {
+                result.add(new String(cursor.next()));
+                tmpIndex++;
+                continue;
+            }
+            // 获取到满足条件的数据后,就可以退出了
+            if (tmpIndex >= toIndex) {
+                break;
+            }
+            tmpIndex++;
+            cursor.next();
+        }
+        RedisConnectionUtils.releaseConnection(rc, factory);
+        return result;
+    }
 
 
     /**
@@ -491,6 +525,28 @@ public class NaCacheTemplate {
     }
 
     /**
+     * 设置键过期时间（秒）
+     * @param key 键
+     * @param time 过期时间秒数，必须 {@code >}0
+     * @return 是否成功
+     *
+     */
+    public boolean expire(String key, long time,TimeUnit unit) {
+        if (time <= 0 || StringUtils.isBlank(key) || unit == null) {
+            log.warn("expire skipped: time <= 0 or key is blank or unit is null");
+            return false;
+        }
+        try {
+            boolean result = redisTemplate.expire(key, time, unit);
+            log.info("Set expire - key: {}, time: {}s, result: {}", key, time, result);
+            return result;
+        } catch (Exception e) {
+            log.error("Expire error - key: {}, time: {}", key, time, e);
+            return false;
+        }
+    }
+
+    /**
      * 获取Redis Hash字段数量
      * @param key Redis键
      * @return 字段数量，异常返回null
@@ -767,6 +823,31 @@ public class NaCacheTemplate {
     }
 
     /**
+     * Redis Hash 批量获取
+     *
+     * @param key    Redis key
+     * @param fields Hash field 列表
+     * @return field -> value 的映射
+     */
+    public Map<String, Object> hmget(String key, Collection<String> fields) {
+        if (StringUtils.isBlank(key) || fields == null || fields.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Object> values = redisTemplate.opsForHash().multiGet(key, new ArrayList<>(fields));
+
+        Map<String, Object> result = new HashMap<>(fields.size());
+        Iterator<String> fieldIt = fields.iterator();
+        Iterator<Object> valueIt = values.iterator();
+
+        while (fieldIt.hasNext()) {
+            result.put(fieldIt.next(), valueIt.next());
+        }
+
+        return result;
+    }
+
+    /**
      * 批量存储Hash字段
      * @param key 键
      * @param map 对应多个键值
@@ -791,11 +872,11 @@ public class NaCacheTemplate {
      * @return true成功 false失败
      *
      */
-    public boolean hmset(String key, Map<String, Object> map, long time) {
+    public boolean hmset(String key, Map<String, Object> map, long time,TimeUnit unit) {
         try {
             redisTemplate.opsForHash().putAll(key, map);
             if (time > 0) {
-                expire(key, time);
+                expire(key, time, unit);
             }
             return true;
         } catch (Exception e) {
@@ -1112,4 +1193,16 @@ public class NaCacheTemplate {
         ZSetOperations<String, Object> zset = redisTemplate.opsForZSet();
         return zset.rangeByScore(key, score, score1);
     }
+
+    /**
+     * 执行 Redis 命令回调
+     *
+     * @param callback Redis回调函数
+     * @return 执行结果
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T execute(RedisCallback<T> callback) {
+        return (T) redisTemplate.execute(callback);
+    }
+
 }
