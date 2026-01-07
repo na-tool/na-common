@@ -45,4 +45,24 @@ public class NaTreeUtil {
         }
     }
 
+    public static <T extends NaTreeNode<?>> List<T> flatten(List<T> tree) {
+        List<T> result = new ArrayList<>();
+        for (T node : tree) {
+            flattenNode(node, result);
+        }
+        return result;
+    }
+
+    private static <T extends NaTreeNode<?>> void flattenNode(T node, List<T> result) {
+        result.add(node); // 先加父节点
+
+        List<? extends NaTreeNode<?>> children = node.getChildren();
+        if (children != null && !children.isEmpty()) {
+            for (NaTreeNode<?> child : children) {
+                flattenNode((T) child, result);
+            }
+        }
+    }
+
+
 }
