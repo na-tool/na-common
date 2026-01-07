@@ -528,6 +528,7 @@ public class NaCacheTemplate {
      * 设置键过期时间（秒）
      * @param key 键
      * @param time 过期时间秒数，必须 {@code >}0
+     * @param unit 时间类型
      * @return 是否成功
      *
      */
@@ -652,6 +653,7 @@ public class NaCacheTemplate {
      *
      * @param lockKey   锁 key
      * @param value 唯一标识（UUID）
+     * @return 是否获取成功
      */
     public boolean releaseLock(String lockKey, String value) {
         if (StringUtils.isBlank(lockKey) || StringUtils.isBlank(value)) {
@@ -827,7 +829,7 @@ public class NaCacheTemplate {
      *
      * @param key    Redis key
      * @param fields Hash field 列表
-     * @return field -> value 的映射
+     * @return {@code field -> value } 的映射
      */
     public Map<String, Object> hmget(String key, Collection<String> fields) {
         if (StringUtils.isBlank(key) || fields == null || fields.isEmpty()) {
