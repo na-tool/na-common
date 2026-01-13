@@ -78,6 +78,21 @@ public interface INaGlobalConst {
             // 系统默认类型
             return SYS_TYPE.SYS_DEF.equals(type);
         }
+
+        /**
+         * 是否内部调用
+         */
+        String YES_NO = "Y";
+
+        /**
+         * 标记来源
+         */
+        String FROM = "from";
+
+        /**
+         * Feign 代理调用
+         */
+        String FEIGN_USER_AGENT = "na-feign";
     }
 
     // 应用配置
