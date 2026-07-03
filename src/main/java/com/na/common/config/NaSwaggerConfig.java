@@ -39,7 +39,7 @@ public class NaSwaggerConfig implements WebMvcConfigurer {
      *
      * 显示swagger-ui.html文档展示页，还必须注入swagger资源：
      *
-     * @param registry
+     * @param registry 资源处理器注册对象
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -50,7 +50,7 @@ public class NaSwaggerConfig implements WebMvcConfigurer {
 
     /**
      * 解决springboot2.6 和springfox不兼容问题
-     * @return
+     * @return BeanPostProcessor后置处理器实例
      */
     @Bean
     @ConditionalOnMissingBean(name = "springfoxHandlerProviderBeanPostProcessor")

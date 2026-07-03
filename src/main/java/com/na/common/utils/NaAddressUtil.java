@@ -97,6 +97,8 @@ public class NaAddressUtil {
 
     /**
      * WebFlux / Gateway 获取客户端真实 IP
+     * @param request ServerHttpRequest 请求对象
+     * @return 客户端真实IP地址
      */
     public static String getIpAddressServer(ServerHttpRequest request) {
         if (request == null) {
