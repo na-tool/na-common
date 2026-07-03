@@ -404,7 +404,7 @@ public class NaApiExceptionHandler {
      * @param e 参数验证异常
      * @return 返回统一的错误响应对象
      */
-    @Order(10)
+    @Order(1)
     @ExceptionHandler(NaBusinessException.class)
     public ResponseEntity<NaResult> handleBusinessException(NaBusinessException e) {
         try{
@@ -446,10 +446,32 @@ public class NaApiExceptionHandler {
      * @param e 参数验证异常
      * @return 返回统一的错误响应对象
      */
-    @Order(100)
+    @Order(999)
     @ExceptionHandler(RuntimeException.class)
     public NaResult handleRuntimeException(RuntimeException e) {
         try{
+            // 新增：解包嵌套异常，识别内部NaBusinessException
+            Throwable rootCause = getRootCause(e);
+            if (rootCause instanceof NaBusinessException) {
+                // 强转后直接抛出原有异常，不要 new 新建
+                NaBusinessException bizEx = (NaBusinessException) rootCause;
+                String msg = i18n(bizEx.getMessage());
+                log.error("BusinessException: {}", msg, bizEx);
+
+                NaSysLogDto sysLogDto = new NaSysLogDto();
+                sysLogDto.setType(NaConst.EX);
+                sysLogDto.setExDesc("日志记录异常");
+                // 加入数据库日志记录
+                StringWriter sw = new StringWriter();
+                bizEx.printStackTrace(new PrintWriter(sw, true));
+                // 异常的详情
+                String expDetail = sw.toString();
+                sysLogDto.setExDetail(expDetail + msg);
+                naLogEventUtil.publishEvent(sysLogDto);
+
+                return NaResult.errorWithArgs( msg);
+            }
+
             log.error("RuntimeException: {}", e.getMessage(), e);
             String msg = i18n("服务器发生运行时错误，请稍后再试");
             NaSysLogDto sysLogDto = new NaSysLogDto();
@@ -477,6 +499,15 @@ public class NaApiExceptionHandler {
             naLogEventUtil.publishEvent(sysLogDto);
             return NaResult.errorWithArgs(ex);
         }
+    }
+
+    // 递归获取最底层原始异常
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable root = throwable;
+        while (root.getCause() != null && root != root.getCause()) {
+            root = root.getCause();
+        }
+        return root;
     }
 
     /**
