@@ -280,44 +280,6 @@ public class NaApiExceptionHandler {
     }
 
     /**
-     * 处理运行时异常，统一返回服务器内部错误提示（国际化）
-     *
-     * @param e 参数验证异常
-     * @return 返回统一的错误响应对象
-     */
-    @ExceptionHandler(RuntimeException.class)
-    public NaResult handleRuntimeException(RuntimeException e) {
-        try{
-            log.error("RuntimeException: {}", e.getMessage(), e);
-            String msg = i18n("服务器发生运行时错误，请稍后再试");
-            NaSysLogDto sysLogDto = new NaSysLogDto();
-            sysLogDto.setType(NaConst.EX);
-            sysLogDto.setExDesc("日志记录异常");
-            // 加入数据库日志记录
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw, true));
-            // 异常的详情
-            String expDetail = sw.toString();
-            sysLogDto.setExDetail(expDetail + msg);
-            naLogEventUtil.publishEvent(sysLogDto);
-
-            return NaResult.errorWithArgs(NaStatus.INTERNAL_SERVER_ERROR_ARGS, msg);
-        }catch (Exception ex){
-            NaSysLogDto sysLogDto = new NaSysLogDto();
-            sysLogDto.setType(NaConst.EX);
-            sysLogDto.setExDesc("日志记录异常");
-            // 加入数据库日志记录
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw, true));
-            // 异常的详情
-            String expDetail = sw.toString();
-            sysLogDto.setExDetail(expDetail);
-            naLogEventUtil.publishEvent(sysLogDto);
-            return NaResult.errorWithArgs(ex);
-        }
-    }
-
-    /**
      * 处理空指针异常，返回国际化提示信息
      *
      * @param e 参数验证异常
@@ -474,6 +436,44 @@ public class NaApiExceptionHandler {
             return ResponseEntity.status(e.getStatus()).body(NaResult.errorWithArgs(ex));
         }
 
+    }
+
+    /**
+     * 处理运行时异常，统一返回服务器内部错误提示（国际化）
+     *
+     * @param e 参数验证异常
+     * @return 返回统一的错误响应对象
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public NaResult handleRuntimeException(RuntimeException e) {
+        try{
+            log.error("RuntimeException: {}", e.getMessage(), e);
+            String msg = i18n("服务器发生运行时错误，请稍后再试");
+            NaSysLogDto sysLogDto = new NaSysLogDto();
+            sysLogDto.setType(NaConst.EX);
+            sysLogDto.setExDesc("日志记录异常");
+            // 加入数据库日志记录
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw, true));
+            // 异常的详情
+            String expDetail = sw.toString();
+            sysLogDto.setExDetail(expDetail + msg);
+            naLogEventUtil.publishEvent(sysLogDto);
+
+            return NaResult.errorWithArgs(NaStatus.INTERNAL_SERVER_ERROR_ARGS, msg);
+        }catch (Exception ex){
+            NaSysLogDto sysLogDto = new NaSysLogDto();
+            sysLogDto.setType(NaConst.EX);
+            sysLogDto.setExDesc("日志记录异常");
+            // 加入数据库日志记录
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw, true));
+            // 异常的详情
+            String expDetail = sw.toString();
+            sysLogDto.setExDetail(expDetail);
+            naLogEventUtil.publishEvent(sysLogDto);
+            return NaResult.errorWithArgs(ex);
+        }
     }
 
     /**
