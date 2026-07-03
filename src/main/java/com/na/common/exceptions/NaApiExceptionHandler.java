@@ -11,6 +11,7 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -403,6 +404,7 @@ public class NaApiExceptionHandler {
      * @param e 参数验证异常
      * @return 返回统一的错误响应对象
      */
+    @Order(10)
     @ExceptionHandler(NaBusinessException.class)
     public ResponseEntity<NaResult> handleBusinessException(NaBusinessException e) {
         try{
@@ -444,6 +446,7 @@ public class NaApiExceptionHandler {
      * @param e 参数验证异常
      * @return 返回统一的错误响应对象
      */
+    @Order(100)
     @ExceptionHandler(RuntimeException.class)
     public NaResult handleRuntimeException(RuntimeException e) {
         try{
@@ -486,6 +489,7 @@ public class NaApiExceptionHandler {
      * @param response HttpServletResponse
      * @return 返回统一的错误响应对象
      */
+    @Order(200)
     @ExceptionHandler(Exception.class)
     public NaResult handleException(Exception e, HandlerMethod method, HttpServletResponse response) {
         try{
