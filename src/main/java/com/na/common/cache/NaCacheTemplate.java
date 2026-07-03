@@ -1199,6 +1199,7 @@ public class NaCacheTemplate {
     /**
      * 执行 Redis 命令回调
      *
+     * @param <T> 返回结果泛型类型
      * @param callback Redis回调函数
      * @return 执行结果
      */
