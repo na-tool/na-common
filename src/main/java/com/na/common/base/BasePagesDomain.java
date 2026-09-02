@@ -66,7 +66,7 @@ public class BasePagesDomain<T> {
     }
 
     public static <T,B> BasePagesDomain<B> pages(IPage<T> page, List<B> data){
-        NaBasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder().totalList(data);
+        BasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder().totalList(data);
         if(page != null){
             builder.currentPage(page.getCurrent())
                     .pageSize(page.getTotal())
@@ -77,7 +77,7 @@ public class BasePagesDomain<T> {
     }
 
     public static <B> BasePagesDomain<B> pages(Page<B> page) {
-        NaBasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder()
+        BasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder()
                 .totalList(page.getRecords());
         if (page != null) {
             builder.currentPage(page.getCurrent())
