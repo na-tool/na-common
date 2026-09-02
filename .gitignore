@@ -12,6 +12,7 @@ target/
 .idea/*.iws
 .idea/*.ipr
 .idea/*.xml
+.idea/misc.xml
 *.iws
 *.iml
 *.ipr
