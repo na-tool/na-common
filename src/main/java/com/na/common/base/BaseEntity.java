@@ -10,7 +10,7 @@ import java.io.Serializable;
 
 @Data
 @ApiModel("所有实体类的超类")
-public class NaBaseEntity<T> implements Serializable {
+public class BaseEntity<T> implements Serializable {
     private static final long serialVersionUID = 3232891580617586888L;
 
     @ApiModelProperty("唯一主键id")

@@ -6,20 +6,22 @@
     <artifactId>na-common</artifactId>
     <groupId>io.github.na-tool</groupId>
     <name>${project.artifactId}</name>
-    <version>1.1.0.2</version>
+    <version>3.0.0</version>
     <packaging>jar</packaging>
     <description>公共部分</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.18</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
     <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.8</java.version>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <url>https://github.com/na-tool/na-common.git</url>

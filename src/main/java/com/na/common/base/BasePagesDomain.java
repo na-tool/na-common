@@ -13,7 +13,7 @@ import java.util.List;
 @Data
 @Builder
 @ApiModel
-public class NaBasePagesDomain<T> {
+public class BasePagesDomain<T> {
     @ApiModelProperty(value = "当前页码")
     private long currentPage;
     @ApiModelProperty(value = "总条数")
@@ -25,7 +25,7 @@ public class NaBasePagesDomain<T> {
     @ApiModelProperty(value = "返回数据对象集")
     private List<T> totalList;
 
-    public NaBasePagesDomain() {
+    public BasePagesDomain() {
         this.currentPage = 1;
         this.pageSize = 10;
         this.total = 0;
@@ -33,7 +33,7 @@ public class NaBasePagesDomain<T> {
         totalList = new ArrayList<>();
     }
 
-    public NaBasePagesDomain(IPage<T> iPage) {
+    public BasePagesDomain(IPage<T> iPage) {
         if (iPage != null) {
             this.currentPage = iPage.getCurrent();
             this.pageSize = iPage.getSize();
@@ -43,21 +43,21 @@ public class NaBasePagesDomain<T> {
         }
     }
 
-    public NaBasePagesDomain(long currentPage,
-                             long pageSize,
-                             long totalPage,
-                             long total) {
+    public BasePagesDomain(long currentPage,
+                           long pageSize,
+                           long totalPage,
+                           long total) {
         this.currentPage = currentPage;
         this.total = total;
         this.totalPage = totalPage;
         this.pageSize = pageSize;
     }
 
-    public NaBasePagesDomain(long currentPage,
-                             long pageSize,
-                             long totalPage,
-                             long total,
-                             List<T> totalList) {
+    public BasePagesDomain(long currentPage,
+                           long pageSize,
+                           long totalPage,
+                           long total,
+                           List<T> totalList) {
         this.currentPage = currentPage;
         this.total = total;
         this.totalPage = totalPage;
@@ -65,8 +65,8 @@ public class NaBasePagesDomain<T> {
         this.totalList = totalList != null ? totalList : new ArrayList<>();
     }
 
-    public static <T,B> NaBasePagesDomain<B> pages(IPage<T> page, List<B> data){
-        NaBasePagesDomainBuilder<B> builder = NaBasePagesDomain.<B>builder().totalList(data);
+    public static <T,B> BasePagesDomain<B> pages(IPage<T> page, List<B> data){
+        NaBasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder().totalList(data);
         if(page != null){
             builder.currentPage(page.getCurrent())
                     .pageSize(page.getTotal())
@@ -76,8 +76,8 @@ public class NaBasePagesDomain<T> {
         return builder.build();
     }
 
-    public static <B> NaBasePagesDomain<B> pages(Page<B> page) {
-        NaBasePagesDomainBuilder<B> builder = NaBasePagesDomain.<B>builder()
+    public static <B> BasePagesDomain<B> pages(Page<B> page) {
+        NaBasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder()
                 .totalList(page.getRecords());
         if (page != null) {
             builder.currentPage(page.getCurrent())

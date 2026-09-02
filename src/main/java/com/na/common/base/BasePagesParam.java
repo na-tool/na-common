@@ -7,7 +7,7 @@ import lombok.Data;
 
 @ApiModel
 @Data
-public class NaBasePagesParam {
+public class BasePagesParam {
     @ApiModelProperty(value = "当前页码")
     private Integer currentPage = 1;
     @ApiModelProperty(value = "每页条数")
