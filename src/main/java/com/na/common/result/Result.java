@@ -2,8 +2,7 @@ package com.na.common.result;
 
 import com.na.common.result.enums.IStatusProvider;
 import com.na.common.result.enums.Status;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -22,18 +21,18 @@ import java.text.MessageFormat;
  *
  * @param <T> 响应数据类型
  */
-@ApiModel
+@Schema(description = "通用响应封装类")
 @Data
 public class Result<T> implements IResultInfoProvider, Serializable {
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty("响应状态码")
+    @Schema(description = "响应状态码", example = "200")
     private Integer code;
 
-    @ApiModelProperty("响应信息")
+    @Schema(description = "响应信息", example = "成功")
     private String msg;
 
-    @ApiModelProperty("响应数据")
+    @Schema(description = "响应数据")
     private T data;
 
     /** 空构造(Jackson/框架反射需要) */
