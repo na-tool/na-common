@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 /**
  * 接口异常注解: 标注在 Controller 方法上, 指定该方法抛出未捕获异常时返回的状态枚举
  * <p>
- * 由 {@link NaApiExceptionHandler} 在兜底处理 {@code Exception.class} 时读取,
+ * 由 {@link ApiExceptionHandler} 在兜底处理 {@code Exception.class} 时读取,
  * 根据 value 决定返回给前端的 Status(状态码 + 消息)
  * <p>
  * 示例:
@@ -22,11 +22,11 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  *
- * @see NaApiExceptionHandler
+ * @see ApiExceptionHandler
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
-public @interface NaApiException {
+public @interface ApiException {
     /**
      * 异常时返回的状态枚举, 默认 DEFAULT
      *

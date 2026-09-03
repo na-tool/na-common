@@ -12,9 +12,9 @@ import org.springframework.http.HttpStatus;
  * }
  * }</pre>
  *
- * @see NaApiExceptionHandler#handleForbiddenException
+ * @see ApiExceptionHandler#handleForbiddenException
  */
-public class NaForbiddenException extends RuntimeException {
+public class ForbiddenException extends RuntimeException {
     private static final long serialVersionUID = -3804995326646218863L;
 
     /** HTTP 状态码, 不为 null */
@@ -26,7 +26,7 @@ public class NaForbiddenException extends RuntimeException {
      * @param ex     异常消息
      * @param status HTTP 状态码; 为 null 时兜底 200
      */
-    public NaForbiddenException(String ex, HttpStatus status) {
+    public ForbiddenException(String ex, HttpStatus status) {
         super(ex);
         this.status = resolveHttpStatus(status);
     }

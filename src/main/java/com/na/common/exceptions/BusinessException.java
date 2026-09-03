@@ -19,9 +19,9 @@ import org.springframework.http.HttpStatus;
  * // 由 NaApiExceptionHandler 捕获后按 httpStatus 返回 ResponseEntity
  * }</pre>
  *
- * @see NaApiExceptionHandler#handleBusinessException
+ * @see ApiExceptionHandler#handleBusinessException
  */
-public class NaBusinessException extends RuntimeException {
+public class BusinessException extends RuntimeException {
     private static final long serialVersionUID = -3804995326646218863L;
 
     /** HTTP 状态码, 不为 null */
@@ -33,7 +33,7 @@ public class NaBusinessException extends RuntimeException {
      * @param ex         异常消息
      * @param httpStatus HTTP 状态码; 为 null 时兜底 200(业务异常通常 HTTP 200 + 业务码区分)
      */
-    public NaBusinessException(String ex, HttpStatus httpStatus) {
+    public BusinessException(String ex, HttpStatus httpStatus) {
         super(ex);
         this.httpStatus = resolveHttpStatus(httpStatus);
     }
@@ -44,7 +44,7 @@ public class NaBusinessException extends RuntimeException {
      * @param status     状态枚举(取其 msg 作为异常消息)
      * @param httpStatus HTTP 状态码; 为 null 时兜底 200
      */
-    public NaBusinessException(IStatusProvider status, HttpStatus httpStatus) {
+    public BusinessException(IStatusProvider status, HttpStatus httpStatus) {
         super(status.getMsg());
         this.httpStatus = resolveHttpStatus(httpStatus);
     }

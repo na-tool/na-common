@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
  * <p>
  * 支持的异常类型(按优先级):
  * <ul>
- *     <li>{@link NaBusinessException} — 业务异常, 按 httpStatus 返回</li>
- *     <li>{@link NaUnauthorizedException} — 401 未授权</li>
- *     <li>{@link NaForbiddenException} — 403 禁止访问</li>
+ *     <li>{@link BusinessException} — 业务异常, 按 httpStatus 返回</li>
+ *     <li>{@link UnauthorizedException} — 401 未授权</li>
+ *     <li>{@link ForbiddenException} — 403 禁止访问</li>
  *     <li>{@link MethodArgumentNotValidException} — @RequestBody 校验失败</li>
  *     <li>{@link BindException} — @Valid 表单校验失败</li>
  *     <li>{@link ConstraintViolationException} — @RequestParam 校验失败</li>
@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 @ResponseBody
 @ConditionalOnProperty(name = "na.api.exception.handler", havingValue = "true", matchIfMissing = true)
-public class NaApiExceptionHandler {
+public class ApiExceptionHandler {
 
     @Autowired
     private Environment environment;
@@ -273,8 +273,8 @@ public class NaApiExceptionHandler {
      * @param e 未授权异常
      * @return 返回统一的错误响应对象
      */
-    @ExceptionHandler(NaUnauthorizedException.class)
-    public ResponseEntity<Result<?>> handleUnauthorizedException(NaUnauthorizedException e) {
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Result<?>> handleUnauthorizedException(UnauthorizedException e) {
         try {
             String msg = i18n(e.getMessage());
             log.error("UnauthorizedException: {}", msg);
@@ -293,8 +293,8 @@ public class NaApiExceptionHandler {
      * @param e 禁止访问异常
      * @return 返回统一的错误响应对象
      */
-    @ExceptionHandler(NaForbiddenException.class)
-    public ResponseEntity<Result<?>> handleForbiddenException(NaForbiddenException e) {
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Result<?>> handleForbiddenException(ForbiddenException e) {
         try {
             String msg = i18n(e.getMessage());
             log.error("ForbiddenException: {}", msg);
@@ -314,8 +314,8 @@ public class NaApiExceptionHandler {
      * @return 返回统一的错误响应对象
      */
     @Order(1)
-    @ExceptionHandler(NaBusinessException.class)
-    public ResponseEntity<Result<?>> handleBusinessException(NaBusinessException e) {
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Result<?>> handleBusinessException(BusinessException e) {
         try {
             String msg = i18n(e.getMessage());
             log.error("BusinessException: {}", msg, e);
@@ -340,8 +340,8 @@ public class NaApiExceptionHandler {
         try {
             // 解包嵌套异常, 识别内部 NaBusinessException
             Throwable rootCause = getRootCause(e);
-            if (rootCause instanceof NaBusinessException) {
-                NaBusinessException bizEx = (NaBusinessException) rootCause;
+            if (rootCause instanceof BusinessException) {
+                BusinessException bizEx = (BusinessException) rootCause;
                 String msg = i18n(bizEx.getMessage());
                 log.error("BusinessException(wrapped): {}", msg, bizEx);
                 logAndPublish(bizEx, msg);
@@ -377,8 +377,8 @@ public class NaApiExceptionHandler {
 
             // method 可能为 null(Filter 层异常等场景), 加防护避免 NPE
             if (method != null) {
-                NaApiException naApiException = method.getMethodAnnotation(NaApiException.class);
-                if (naApiException != null) {
+                ApiException apiException = method.getMethodAnnotation(ApiException.class);
+                if (apiException != null) {
                     if ("不允许访问".equals(e.getMessage())) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         return Result.error(Status.USER_NO_ACCESS);
@@ -388,7 +388,7 @@ public class NaApiExceptionHandler {
                         return Result.error(Status.USER_NEED_AUTHORITIES);
                     }
 
-                    Status status = naApiException.value();
+                    Status status = apiException.value();
                     logAndPublish(e, status.toString());
                     return (status.getCode() == Status.DEFAULT.getCode()
                             || status.getCode() == Status.SUCCESS.getCode())
