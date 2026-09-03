@@ -18,8 +18,8 @@ import org.springframework.util.StringUtils;
  * Redisson 是基于 Redis 的高阶客户端, 提供 RedisTemplate 不具备的分布式能力:
  * 分布式锁(RLock)、分布式集合、布隆过滤器、限流器、延迟队列、分布式调度等。
  * <p>
- * 为什么需要手动配置: 本项目依赖的是 {@code redisson-spring-data-25}(仅做 Redisson 与
- * Spring Data Redis 的连接桥接), 而非 {@code redisson-spring-boot-starter}(后者会自动配置
+ * 为什么需要手动配置: 本项目依赖的是 {@code redisson-spring-data-35:3.52.0}(对应 Spring Data Redis
+ * 3.5 / Spring Boot 3.5 的桥接包), 而非 {@code redisson-spring-boot-starter}(后者会自动配置
  * RedissonClient)。因此需在此手动从 {@link RedisProperties} 读取连接信息创建客户端。
  * <p>
  * 生效条件(默认不开启, 需同时满足, 缺一不可):
@@ -106,6 +106,9 @@ public class RedissonConfig {
         if (StringUtils.hasText(password)) {
             singleServerConfig.setPassword(password);
         }
+
+        // database: 复用 RedisProperties 的库号, 避免 Redisson 与 RedisTemplate 操作不同的库导致数据错位
+        singleServerConfig.setDatabase(redisProperties.getDatabase());
 
         // 超时与重试: 默认值可通过配置覆盖, 适配不同网络质量环境
         singleServerConfig.setTimeout(timeout);
