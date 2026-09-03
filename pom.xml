@@ -147,12 +147,21 @@
             <version>2.11.1</version>
             <scope>provided</scope>
         </dependency>
+        <!-- 核心包 -->
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>2.0.64</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Spring 6 / Spring Boot 3.x 专用扩展包: 提供 FastJsonHttpMessageConverter / FastJsonRedisSerializer -->
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2-extension-spring6</artifactId>
+            <version>2.0.61</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.lionsoul</groupId>
             <artifactId>ip2region</artifactId>

@@ -1,6 +1,6 @@
 package com.na.common.config;
 
-import com.alibaba.fastjson.support.spring.FastJsonRedisSerializer;
+import com.alibaba.fastjson2.support.spring6.data.redis.FastJsonRedisSerializer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,8 +40,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  *     enable: true        # 显式开启, 缺省为 false
  * }</pre>
  * <p>
- * FastJson 反序列化说明: value 以 Object.class 反序列化时, 自定义类型会被解析为
- * {@code JSONObject} 而非原对象, 业务方取值后需自行 {@code JSONObject.toJavaObject(obj, TargetClass.class)}
+ * FastJson2 反序列化说明: value 以 Object.class 反序列化时, 自定义类型会被解析为
+ * {@code JSONObject} 而非原对象, 业务方取值后需自行 {@code JSON.toJavaObject(obj, TargetClass.class)}
  * 转回原类型; 如需自动还原类型, 建议改用 {@code Jackson2JsonRedisSerializer} 并启用默认类型注入。
  */
 @Configuration(proxyBeanMethods = false)
@@ -58,9 +58,9 @@ public class RedisConfig {
      *
      * // 存对象
      * redisTemplate.opsForValue().set("user:1", userDto);
-     * // 取对象(注意 FastJson 会返回 JSONObject, 需手动转类型)
+     * // 取对象(注意 FastJson2 会返回 JSONObject, 需手动转类型)
      * Object raw = redisTemplate.opsForValue().get("user:1");
-     * UserDto user = ((JSONObject) raw).toJavaObject(UserDto.class);
+     * UserDto user = JSON.toJavaObject(raw, UserDto.class);
      * }</pre>
      *
      * @param redisConnectionFactory Redis 连接工厂, 由 Spring Boot RedisAutoConfiguration 自动创建
