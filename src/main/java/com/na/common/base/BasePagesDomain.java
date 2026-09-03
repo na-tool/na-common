@@ -2,8 +2,7 @@ package com.na.common.base;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,17 +11,17 @@ import java.util.List;
 
 @Data
 @Builder
-@ApiModel
+@Schema(description = "分页返回结果")
 public class BasePagesDomain<T> {
-    @ApiModelProperty(value = "当前页码")
+    @Schema(description = "当前页码", example = "1")
     private long currentPage;
-    @ApiModelProperty(value = "总条数")
+    @Schema(description = "总条数", example = "100")
     private long total;
-    @ApiModelProperty(value = "总页数")
+    @Schema(description = "总页数", example = "10")
     private long totalPage;
-    @ApiModelProperty(value = "每页记录条数")
+    @Schema(description = "每页记录条数", example = "10")
     private long pageSize;
-    @ApiModelProperty(value = "返回数据对象集")
+    @Schema(description = "返回数据对象集")
     private List<T> totalList;
 
     public BasePagesDomain() {
