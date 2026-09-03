@@ -19,7 +19,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * <p>
  * 生效条件(默认不开启, 需同时满足, 缺一不可):
  * <ol>
- *     <li>{@code spring.redis.host} 已配置且非空(表示已接入 Redis)</li>
+ *     <li>{@code spring.data.redis.host} 已配置且非空(表示已接入 Redis)</li>
  *     <li>{@code na.redis.enable=true} 显式开启本配置(缺省视为 false)</li>
  * </ol>
  * 不满足时本 Bean 不注册, 回落到 Spring Boot 默认 {@code RedisAutoConfiguration}。
@@ -45,7 +45,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * 转回原类型; 如需自动还原类型, 建议改用 {@code Jackson2JsonRedisSerializer} 并启用默认类型注入。
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnExpression("!'${spring.redis.host:}'.isEmpty() && '${na.redis.enable:false}'.equals('true')")
+@ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redis.enable:false}'.equals('true')")
 public class RedisConfig {
 
     /**
