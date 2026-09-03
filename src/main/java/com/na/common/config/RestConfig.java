@@ -2,6 +2,7 @@ package com.na.common.config;
 
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
+import com.na.common.utils.RestTemplateUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
@@ -113,6 +114,9 @@ public class RestConfig {
         fastJsonConverter.setFastJsonConfig(fastJsonConfig);
         // 插入首位: RestTemplate 按列表顺序匹配 Content-Type, 首位优先级最高
         restTemplate.getMessageConverters().add(0, fastJsonConverter);
+
+        // 4. 同步覆盖 RestTemplateUtil 静态实例的超时, 使静态调用与 Bean 超时配置一致
+        RestTemplateUtil.init(connectTimeout, readTimeout);
 
         return restTemplate;
     }

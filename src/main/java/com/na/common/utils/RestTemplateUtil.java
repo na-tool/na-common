@@ -34,17 +34,36 @@ public final class RestTemplateUtil {
     /** 默认读取超时(毫秒) */
     private static final int DEFAULT_READ_TIMEOUT_MILLIS = 30_000;
 
-    /** 共享实例: RestTemplate 无状态、线程安全; 预置 UTF-8 转换器与默认超时 */
-    private static final RestTemplate REST_TEMPLATE;
+    /**
+     * 共享实例: RestTemplate 无状态、线程安全; 预置 UTF-8 转换器
+     * <p>
+     * 声明为 volatile: 保证 {@link #init(int, int)} 重建实例后, 其他线程立即可见新实例
+     */
+    private static volatile RestTemplate REST_TEMPLATE;
 
     static {
+        // 类加载时用默认超时初始化, 保证不依赖 Spring 容器也能直接使用
+        REST_TEMPLATE = createRestTemplate(DEFAULT_CONNECT_TIMEOUT_MILLIS, DEFAULT_READ_TIMEOUT_MILLIS);
+    }
+
+    /**
+     * 按指定超时创建预配置的 RestTemplate(保留 Spring 默认转换器 + 追加 UTF-8 字符串转换器)
+     * <p>
+     * 抽取为私有方法, 供 static 块默认初始化与 {@link #init(int, int)} 覆盖配置复用
+     *
+     * @param connectTimeoutMillis 连接超时(毫秒)
+     * @param readTimeoutMillis    读取超时(毫秒)
+     * @return 预配置的 RestTemplate 实例
+     */
+    private static RestTemplate createRestTemplate(int connectTimeoutMillis, int readTimeoutMillis) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        // 默认超时: 防止对端无响应时调用线程无限挂起(原实现无超时)
-        factory.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT_MILLIS);
-        factory.setReadTimeout(DEFAULT_READ_TIMEOUT_MILLIS);
-        REST_TEMPLATE = new RestTemplate(factory);
+        // 超时: 防止对端无响应时调用线程无限挂起
+        factory.setConnectTimeout(connectTimeoutMillis);
+        factory.setReadTimeout(readTimeoutMillis);
+        RestTemplate restTemplate = new RestTemplate(factory);
         // 追加 UTF-8 字符串转换器, 避免响应为 text/* 时中文乱码
-        REST_TEMPLATE.getMessageConverters().add(new StringHttpMessageConverter(StandardCharsets.UTF_8));
+        restTemplate.getMessageConverters().add(new StringHttpMessageConverter(StandardCharsets.UTF_8));
+        return restTemplate;
     }
 
     /** 纯静态工具类，禁止实例化 */
@@ -53,11 +72,41 @@ public final class RestTemplateUtil {
 
     /**
      * 获取共享的 RestTemplate 实例(线程安全, 可直接复用)
+     * <p>
+     * 示例: {@code RestTemplate rt = RestTemplateUtil.init();}
      *
-     * @return 预配置的 RestTemplate
+     * @return 预配置的 RestTemplate(超时为默认值或最近一次 {@link #init(int, int)} 设置的值)
      */
     public static RestTemplate init() {
         return REST_TEMPLATE;
+    }
+
+    /**
+     * 用自定义超时重建共享的 RestTemplate 实例(覆盖默认 5s/30s)
+     * <p>
+     * 典型场景: Spring 启动时由配置类(如 RestConfig)从 application.yml 读取
+     * {@code na.rest.connect-timeout} / {@code na.rest.read-timeout} 后调用本方法,
+     * 使静态实例的超时与配置一致。重建后所有静态方法(get/post/execute)将使用新实例。
+     * <p>
+     * 注意: RestTemplate 无状态, 重建不影响进行中的请求; 但若调用方缓存了
+     * {@link #init()} 返回的旧实例引用, 重建后该引用仍指向旧实例(超时不变),
+     * 建议通过静态方法调用而非缓存实例引用。
+     * <p>
+     * 示例:
+     * <pre>{@code
+     * // application.yml: na.rest.connect-timeout=8000, na.rest.read-timeout=60000
+     * RestTemplateUtil.init(8000, 60000);
+     * // 之后所有静态调用使用新超时
+     * RestTemplateUtil.get("https://api.example.com/hi", String.class);
+     * }</pre>
+     *
+     * @param connectTimeoutMillis 连接超时(毫秒); 传入 <= 0 时沿用默认值 {@value #DEFAULT_CONNECT_TIMEOUT_MILLIS}
+     * @param readTimeoutMillis    读取超时(毫秒); 传入 <= 0 时沿用默认值 {@value #DEFAULT_READ_TIMEOUT_MILLIS}
+     */
+    public static synchronized void init(int connectTimeoutMillis, int readTimeoutMillis) {
+        int connect = connectTimeoutMillis > 0 ? connectTimeoutMillis : DEFAULT_CONNECT_TIMEOUT_MILLIS;
+        int read = readTimeoutMillis > 0 ? readTimeoutMillis : DEFAULT_READ_TIMEOUT_MILLIS;
+        REST_TEMPLATE = createRestTemplate(connect, read);
     }
 
     /**
