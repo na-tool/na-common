@@ -89,6 +89,13 @@
             <version>3.5.9</version>
             <scope>provided</scope>
         </dependency>
+        <!-- 分页等依赖 jsqlparser 的拦截器(3.5.6+ 从 extension 拆出, 需单独引入) -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.9</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
