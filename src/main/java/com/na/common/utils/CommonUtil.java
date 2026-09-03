@@ -9,6 +9,8 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -29,6 +31,9 @@ public class CommonUtil {
 
     /** 整段 IP 范围模式: 起始IP-结束IP, 如 192.168.1.10-192.168.1.20 */
     private static final Pattern IP_RANGE_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+-\\d+\\.\\d+\\.\\d+\\.\\d+");
+
+    /** 日期存储路径格式(末尾带 /, 便于直接拼接文件名) */
+    private static final DateTimeFormatter DATE_PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd/");
 
     /** 纯静态工具类，禁止实例化 */
     private CommonUtil() {
@@ -325,5 +330,16 @@ public class CommonUtil {
             // 端口配置非法，视为不匹配
         }
         return false;
+    }
+
+    /**
+     * 生成当天日期存储路径, 常用于上传文件按日期归档
+     * <p>
+     * 示例: {@code String subPath = FileUtil.generateDateStoragePath(); // "2026/09/03/"}
+     *
+     * @return "yyyy/MM/dd/" 格式的日期路径字符串(末尾带 /)
+     */
+    public static String generateDateStoragePath() {
+        return LocalDate.now().format(DATE_PATH_FORMATTER);
     }
 }
