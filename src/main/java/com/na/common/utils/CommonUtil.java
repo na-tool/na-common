@@ -1,5 +1,6 @@
 package com.na.common.utils;
 
+import com.alibaba.fastjson2.JSON;
 import com.na.common.constant.GlobalConst;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,7 +12,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -341,5 +344,43 @@ public class CommonUtil {
      */
     public static String generateDateStoragePath() {
         return LocalDate.now().format(DATE_PATH_FORMATTER);
+    }
+
+
+    /**
+     * 将任意对象转换为 {@code Map<String, Object>}, 使用 fastjson2 保留字段顺序
+     * <p>
+     * 示例:
+     * <pre>{@code
+     * User user = new User(1L, "张三", 18);
+     * Map<String, Object> map = objectToMap(user);
+     * // {id=1, name=张三, age=18}
+     * }</pre>
+     *
+     * @param obj 任意对象(POJO、VO、Map 等); 传入 List/数组等非对象类型时返回空 Map
+     * @return LinkedHashMap, 字段顺序与对象定义一致; obj 为 null 时返回空 Map
+     */
+    public static Map<String, Object> objectToMap(Object obj) {
+        if (obj == null) {
+            return new LinkedHashMap<>();
+        }
+
+        // 已是 Map 类型时直接包装, 跳过 fastjson 序列化开销
+        if (obj instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) obj;
+            return new LinkedHashMap<>(map);
+        }
+
+        // fastjson2: JSON.toJSON 返回 JSONObject(实现了 Map 接口, 内部用 LinkedHashMap 保持顺序)
+        Object json = JSON.toJSON(obj);
+        if (json instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) json;
+            return new LinkedHashMap<>(map);
+        }
+
+        // List/数组等无法转为 Map, 返回空
+        return new LinkedHashMap<>();
     }
 }
