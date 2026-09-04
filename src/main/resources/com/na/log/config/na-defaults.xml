@@ -1,238 +1,399 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  na-common 提供的 Logback 默认配置(included 片段, 不可直接作为根配置使用)
+  在业务项目中通过以下任一方式引入:
+
+  方式 1(推荐):
+      创建 src/main/resources/logback-spring.xml (Logback Spring 扩展, 支持 <springProfile>/<springProperty>)
+      <configuration scan="true" scanPeriod="30 seconds">
+          <include resource="com/na/log/config/na-defaults.xml"/>
+      </configuration>
+
+  方式 2(使用自定义文件):
+      在 application.yml 中设置 logging.config=classpath:your-logback.xml,
+      your-logback.xml 内使用 <include resource="com/na/log/config/na-defaults.xml"/> 引入本文件.
+
+  可覆盖的 application.yml 属性(均可被 Nacos / 环境变量覆盖):
+      logging.path                        = 日志根目录                默认: logs
+      logging.file.max-history            = 保留天数                  默认: 30
+      logging.file.max-size               = 单文件最大大小            默认: 100MB
+      logging.file.total-size-cap         = 同类型文件总大小上限      默认: 10GB
+      logging.common-pattern              = 文件输出格式              默认: [时间] [级别] [线程] 类.方法:行 --> 消息
+      logging.console-pattern             = 控制台输出格式            默认: 带颜色高亮
+      logging.level.console               = 控制台/ROOT 最低级别      默认: INFO
+      logging.level.controller            = controller 包级别         默认: INFO
+      logging.level.service               = service 包级别            默认: INFO
+      logging.level.sql                   = dao/sql 日志级别          默认: DEBUG
+      logging.level.nacos                 = nacos 客户端日志级别      默认: WARN
+      logging.async.queue-size            = 异步队列大小              默认: 512
+      logging.async.discarding-threshold  = 异步丢弃阈值(0=不丢弃)    默认: 0
+      logging.logback.neverBlock          = 异步队列满时是否阻塞主线程(true=不阻塞,丢 TRACE/DEBUG/INFO) 默认: false
+
+  输出文件(均位于 ${logging.path}/${spring.application.name}/):
+      root.log         ROOT 级全量(含第三方)
+      project.log      业务代码(com.na.*)
+      third_party.log  第三方依赖
+      service.log      com.na.*.service.*
+      controller.log   com.na.*.controller.*
+      dao.log          SQL/dao 层
+      exception.log    异常堆栈(com.na.exceptions + 所有 ERROR+)
+      gc.log           GC / JVM 内部事件(若 JVM 开启 GC 日志到 Slf4j)
+
+  Profile 差异:
+      dev:                    CONSOLE(同步, 高亮) + 同步文件 appender; GC 日志 DEBUG
+      test / docker / prod:   全部 Async 包装 (异步控制台 + 异步文件 + 异步异常/第三方/dao/service/controller/GC)
+-->
 <included>
-    <!--
-         规则：
-            dev 开发环境： 启用实时打印日志，启用p6spy打印sql语句到控制台
-            其他环境:  启用异步打印，  禁用p6spy
-           %m
-           输出代码中指定的消息
-           %p
-           输出优先级，即DEBUG，INFO，WARN，ERROR，FATAL
-           %r
-           输出自应用启动到输出该log信息耗费的毫秒数
-           %c
-           输出所属的类目，通常就是所在类的全名
-           %t
-           输出产生该日志事件的线程名
-           %n
-           输出一个回车换行符，Windows平台为“\r\n”，Unix平台为“\n”
-           %d
-           输出日志时间点的日期或时间，默认格式为ISO8601，也可以在其后指定格式，比如：%d{yyy MMM dd HH:mm:ss,SSS}，
-           输出类似：2002年10月18日 22：10：28，921
-           %l
-           输出日志事件的发生位置，包括类目名、发生的线程，以及在代码中的行数。举例：Testlog4.main(TestLog4.java:10)
-        -->
-    <springProperty scope="context" name="log.path" source="logging.path" defaultValue="logs"/>
-    <springProperty scope="context" name="spring.application.name" source="spring.application.name"/>
-    <springProperty scope="context" name="spring.profiles.active" source="spring.profiles.active"/>
-    <springProperty scope="context" name="common-pattern" source="logging.common-pattern"
-                    defaultValue="%d{yyyy-MM-dd HH:mm:ss.SSS}:[%5p] [%t:%r] [%logger{50}.%M:%L] --> %msg%n"/>
-    <springProperty scope="context" name="log.level.console" source="logging.level.console" defaultValue="INFO"/>
-    <springProperty scope="context" name="log.level.controller" source="logging.level.controller" defaultValue="INFO"/>
-    <springProperty scope="context" name="log.level.service" source="logging.level.service" defaultValue="INFO"/>
-    <springProperty scope="context" name="log.level.dao" source="logging.level.sql" defaultValue="DEBUG"/>
-    <springProperty scope="context" name="log.level.nacos" source="logging.level.nacos" defaultValue="WARN"/>
 
-<!--    <contextName>${spring.application.name}-logback</contextName>-->
+    <!-- ===================== 属性绑定 (Spring 属性 → Logback 变量) ===================== -->
+    <springProperty scope="context" name="LOG_PATH"                source="logging.path"                      defaultValue="logs"/>
+    <springProperty scope="context" name="APP_NAME"                source="spring.application.name"           defaultValue="na-app"/>
+    <springProperty scope="context" name="ACTIVE_PROFILE"          source="spring.profiles.active"            defaultValue="dev"/>
 
+    <!-- rolling 策略可调参数 -->
+    <springProperty scope="context" name="MAX_FILE_SIZE"           source="logging.file.max-size"             defaultValue="100MB"/>
+    <springProperty scope="context" name="MAX_HISTORY"             source="logging.file.max-history"          defaultValue="30"/>
+    <springProperty scope="context" name="TOTAL_SIZE_CAP"          source="logging.file.total-size-cap"       defaultValue="10GB"/>
+
+    <!-- 输出格式 -->
+    <springProperty scope="context" name="COMMON_PATTERN"          source="logging.common-pattern"
+                    defaultValue="%d{yyyy-MM-dd HH:mm:ss.SSS} [%5p] [%t] [%logger{50}.%M:%L] - %msg%n%ex"/>
+    <springProperty scope="context" name="CONSOLE_PATTERN"         source="logging.console-pattern"
+                    defaultValue="%d{yyyy-MM-dd HH:mm:ss.SSS} [%5p] [%magenta(%t)] [%cyan(%logger{48})%white(.%M:%L)] - %highlight(%msg) %n%ex"/>
+
+    <!-- 日志级别 -->
+    <springProperty scope="context" name="LV_CONSOLE"              source="logging.level.console"             defaultValue="INFO"/>
+    <springProperty scope="context" name="LV_CONTROLLER"           source="logging.level.controller"          defaultValue="INFO"/>
+    <springProperty scope="context" name="LV_SERVICE"              source="logging.level.service"             defaultValue="INFO"/>
+    <springProperty scope="context" name="LV_DAO"                  source="logging.level.sql"                 defaultValue="DEBUG"/>
+    <springProperty scope="context" name="LV_NACOS"                source="logging.level.nacos"               defaultValue="WARN"/>
+    <springProperty scope="context" name="LV_GC"                   source="logging.level.gc"                  defaultValue="INFO"/>
+
+    <!-- Async 策略 -->
+    <springProperty scope="context" name="ASYNC_QUEUE_SIZE"        source="logging.async.queue-size"          defaultValue="512"/>
+    <springProperty scope="context" name="ASYNC_DISCARD_THRESHOLD" source="logging.async.discarding-threshold" defaultValue="0"/>
+    <springProperty scope="context" name="NEVER_BLOCK"             source="logging.logback.neverBlock"        defaultValue="false"/>
+
+    <!-- 日志目录前缀, 统一使用, 避免每个 appender 重复拼接 -->
+    <property scope="context"  name="LOG_DIR"  value="${LOG_PATH}/${APP_NAME}"/>
+
+    <!-- 引入 Spring Boot 默认转换规则 (%clr/%ex 等) -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 可选: JMX 动态改级别 (jconsole/logback-bean-viewer -> setLoggerLevel) -->
     <jmxConfigurator/>
 
-    <!-- 控制台实时输出，采用高亮语法，用于开发环境 -->
+    <!-- ===================== 控制台 ===================== -->
+    <!-- 同步控制台 (dev 直接引用, 非 dev 包装为 Async) -->
     <appender name="CONSOLE_APPENDER" class="ch.qos.logback.core.ConsoleAppender">
+        <!--
+          ThresholdFilter: 低于该级别的事件直接丢弃. 避免 ROOT=DEBUG 时控制台刷屏, 但仍能落盘.
+          如果希望控制台完全跟随 ROOT 级别, 可删除本段 filter, 或设置 logging.level.console=TRACE
+        -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${log.level.console}</level>
+            <level>${LV_CONSOLE}</level>
         </filter>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}:[%5p] [%t:%r] [%cyan(%logger{50}).%M:%L] --> %highlight(%msg) %n
-            </pattern>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="ch.qos.logback.classic.PatternLayout">
+                <pattern>${CONSOLE_PATTERN}</pattern>
+            </layout>
         </encoder>
     </appender>
-    <!-- 控制台异步实时输出 -->
+    <!-- 异步控制台 (生产环境用, 不阻塞业务线程打印 console) -->
     <appender name="ASYNC_CONSOLE_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
-        <discardingThreshold>0</discardingThreshold>
-        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
-        <queueSize>256</queueSize>
-        <!-- 添加附加的appender,最多只能添加一个 -->
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="CONSOLE_APPENDER"/>
     </appender>
 
-    <!-- 整个项目的所有日志， 包括第三方包 -->
+    <!-- ========== ROOT 文件 ========== -->
     <appender name="ROOT_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/root.log</file>
+        <file>${LOG_DIR}/root.log</file>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- 每天一归档 -->
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/root-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/root-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
     </appender>
     <appender name="ASYNC_ROOT_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="ROOT_APPENDER"/>
     </appender>
 
-    <!-- 整个项目na.com下的的所有日志， 不包括第三方包 -->
+    <!-- ========== 业务代码 com.na.* ========== -->
     <appender name="PROJECT_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/project.log</file>
+        <file>${LOG_DIR}/project.log</file>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- 每天一归档 -->
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/project-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/project-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
     </appender>
     <appender name="ASYNC_PROJECT_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="PROJECT_APPENDER"/>
     </appender>
 
-    <!-- 整个项目第三方包下的的日志 -->
+    <!-- ========== 第三方依赖(非 com.na.*) ========== -->
     <appender name="THIRD_PARTY_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/third_party.log</file>
+        <file>${LOG_DIR}/third_party.log</file>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- 每天一归档 -->
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/third_party-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/third_party-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>NEUTRAL</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
     </appender>
     <appender name="ASYNC_THIRD_PARTY_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>false</includeCallerData>
         <appender-ref ref="THIRD_PARTY_APPENDER"/>
     </appender>
 
-    <!-- service包的日志 -->
+    <!-- ========== service 包 ========== -->
     <appender name="SERVICE_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/service.log</file>
+        <file>${LOG_DIR}/service.log</file>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/service-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/service-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
     </appender>
     <appender name="ASYNC_SERVICE_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="SERVICE_APPENDER"/>
     </appender>
 
-    <!-- controller 包的日志 -->
+    <!-- ========== controller 包 ========== -->
     <appender name="CONTROLLER_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/controller.log</file>
+        <file>${LOG_DIR}/controller.log</file>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/controller-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/controller-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
     </appender>
     <appender name="ASYNC_CONTROLLER_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="CONTROLLER_APPENDER"/>
     </appender>
 
-
-    <!-- dao层日志，用于打印执行的sql  -->
+    <!-- ========== dao/sql 层 ========== -->
     <appender name="DAO_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/dao.log</file>
+        <file>${LOG_DIR}/dao.log</file>
+        <append>true</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/dao-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/dao-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
     </appender>
     <appender name="ASYNC_DAO_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="DAO_APPENDER"/>
     </appender>
 
-    <!-- 共用异常包的日志 -->
+    <!-- ========== 异常专档(所有 ERROR + com.na.exceptions) ========== -->
     <appender name="EXCEPTION_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/${spring.application.name}/exception.log</file>
+        <file>${LOG_DIR}/exception.log</file>
+        <append>true</append>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/${spring.application.name}/%d{yyyy-MM}/exception-%d{yyyy-MM-dd}-%i.log.gz
-            </fileNamePattern>
-            <!-- 单个日志文件最多 100MB, 30天的日志周期，最大不能超过10GB -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/exception-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${common-pattern}</pattern>
+            <charset>UTF-8</charset>
+            <!-- 异常日志补行号 + 完整堆栈 -->
+            <pattern>${COMMON_PATTERN}</pattern>
         </encoder>
     </appender>
     <appender name="ASYNC_EXCEPTION_APPENDER" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>256</queueSize>
+        <discardingThreshold>${ASYNC_DISCARD_THRESHOLD}</discardingThreshold>
+        <queueSize>${ASYNC_QUEUE_SIZE}</queueSize>
+        <neverBlock>${NEVER_BLOCK}</neverBlock>
+        <includeCallerData>true</includeCallerData>
         <appender-ref ref="EXCEPTION_APPENDER"/>
     </appender>
 
+    <!-- ========== GC / JVM 相关 (可选, 不配置会被直接挂到 ROOT) ========== -->
+    <logger name="jvm.gc"          level="${LV_GC}"  additivity="false"/>
+    <logger name="jvm.memory"      level="${LV_GC}"  additivity="false"/>
 
-    <springProfile name="test,docker,prod">
-        <root level="${log.level.console}">
+    <!-- ===================== 第三方框架级别调节 ===================== -->
+    <!-- 常见容易刷屏的第三方包, 用 springProperty 绑定的 nacos/yml 可调变量 -->
+    <logger name="com.alibaba.nacos"            level="${LV_NACOS}" additivity="true"/>
+    <logger name="org.apache.http"              level="WARN"        additivity="true"/>
+    <logger name="org.apache.http.wire"         level="ERROR"       additivity="true"/>
+    <logger name="io.lettuce.core"              level="WARN"        additivity="true"/>
+    <logger name="com.zaxxer.hikari"            level="WARN"        additivity="true"/>
+    <logger name="org.springframework.boot.actuate.endpoint" level="WARN" additivity="true"/>
+
+    <!-- ===================== Profile 差异化绑定 ===================== -->
+
+    <!-- 非 dev: 全异步, 低延迟, 适合生产/压测 -->
+    <springProfile name="test | docker | prod">
+        <root level="${LV_CONSOLE}">
             <appender-ref ref="ASYNC_ROOT_APPENDER"/>
             <appender-ref ref="ASYNC_CONSOLE_APPENDER"/>
+            <appender-ref ref="ASYNC_EXCEPTION_APPENDER"/>
+            <appender-ref ref="ASYNC_THIRD_PARTY_APPENDER"/>
         </root>
-        <logger name="com.na" additivity="true" level="${log.level.console}">
+
+        <!-- 业务包日志: 同时写 project + 各自的 service/controller 分流文件 -->
+        <logger name="com.na"            additivity="true" level="${LV_CONSOLE}">
             <appender-ref ref="ASYNC_PROJECT_APPENDER"/>
+            <appender-ref ref="ASYNC_EXCEPTION_APPENDER"/>
         </logger>
-        <logger name="com.na.exceptions" additivity="true" level="${log.level.console}">
+        <logger name="com.na.service"    additivity="true" level="${LV_SERVICE}">
+            <appender-ref ref="ASYNC_SERVICE_APPENDER"/>
+        </logger>
+        <logger name="com.na.controller" additivity="true" level="${LV_CONTROLLER}">
+            <appender-ref ref="ASYNC_CONTROLLER_APPENDER"/>
+        </logger>
+        <!-- dao/sql: mybatis mapper / jdbc 模板, 支持 DEBUG 看参数 -->
+        <logger name="com.na.mapper"     additivity="true" level="${LV_DAO}">
+            <appender-ref ref="ASYNC_DAO_APPENDER"/>
+        </logger>
+        <logger name="com.na.dao"        additivity="true" level="${LV_DAO}">
+            <appender-ref ref="ASYNC_DAO_APPENDER"/>
+        </logger>
+        <!-- 老版本兼容: 之前的 exceptions 包名仍支持 -->
+        <logger name="com.na.exceptions" additivity="true" level="${LV_CONSOLE}">
             <appender-ref ref="ASYNC_EXCEPTION_APPENDER"/>
         </logger>
     </springProfile>
 
+    <!-- dev: 同步输出, 行号/堆栈完整, 方便 IDE 即时排查 -->
     <springProfile name="dev">
-        <root level="${log.level.console}">
+        <root level="${LV_CONSOLE}">
             <appender-ref ref="CONSOLE_APPENDER"/>
             <appender-ref ref="ROOT_APPENDER"/>
-        </root>
-        <logger name="com.na" additivity="true" level="${log.level.console}">
-            <appender-ref ref="PROJECT_APPENDER"/>
-        </logger>
-        <logger name="com.na.exceptions" additivity="true" level="${log.level.console}">
             <appender-ref ref="EXCEPTION_APPENDER"/>
+            <appender-ref ref="THIRD_PARTY_APPENDER"/>
+        </root>
+
+        <logger name="com.na"            additivity="true" level="${LV_CONSOLE}">
+            <appender-ref ref="PROJECT_APPENDER"/>
+            <appender-ref ref="EXCEPTION_APPENDER"/>
+        </logger>
+        <logger name="com.na.service"    additivity="true" level="${LV_SERVICE}">
+            <appender-ref ref="SERVICE_APPENDER"/>
+        </logger>
+        <logger name="com.na.controller" additivity="true" level="${LV_CONTROLLER}">
+            <appender-ref ref="CONTROLLER_APPENDER"/>
+        </logger>
+        <logger name="com.na.mapper"     additivity="true" level="${LV_DAO}">
+            <appender-ref ref="DAO_APPENDER"/>
+        </logger>
+        <logger name="com.na.dao"        additivity="true" level="${LV_DAO}">
+            <appender-ref ref="DAO_APPENDER"/>
+        </logger>
+        <logger name="com.na.exceptions" additivity="true" level="${LV_CONSOLE}">
+            <appender-ref ref="EXCEPTION_APPENDER"/>
+        </logger>
+
+        <!-- dev 时 GC 日志放宽到 DEBUG, 便于观察压测/排查 -->
+        <logger name="jvm.gc"            level="DEBUG" additivity="false">
+            <appender-ref ref="ROOT_APPENDER"/>
+        </logger>
+    </springProfile>
+
+    <!-- 兜底: profile 非 dev 也不在 test/docker/prod 列表的场景, 使用非 dev 的异步配置 -->
+    <springProfile name="!dev &amp; !test &amp; !docker &amp; !prod">
+        <root level="${LV_CONSOLE}">
+            <appender-ref ref="ASYNC_ROOT_APPENDER"/>
+            <appender-ref ref="ASYNC_CONSOLE_APPENDER"/>
+            <appender-ref ref="ASYNC_EXCEPTION_APPENDER"/>
+            <appender-ref ref="ASYNC_THIRD_PARTY_APPENDER"/>
+        </root>
+        <logger name="com.na"            additivity="true" level="${LV_CONSOLE}">
+            <appender-ref ref="ASYNC_PROJECT_APPENDER"/>
+            <appender-ref ref="ASYNC_EXCEPTION_APPENDER"/>
+        </logger>
+        <logger name="com.na.service"    additivity="true" level="${LV_SERVICE}">
+            <appender-ref ref="ASYNC_SERVICE_APPENDER"/>
+        </logger>
+        <logger name="com.na.controller" additivity="true" level="${LV_CONTROLLER}">
+            <appender-ref ref="ASYNC_CONTROLLER_APPENDER"/>
+        </logger>
+        <logger name="com.na.mapper"     additivity="true" level="${LV_DAO}">
+            <appender-ref ref="ASYNC_DAO_APPENDER"/>
+        </logger>
+        <logger name="com.na.dao"        additivity="true" level="${LV_DAO}">
+            <appender-ref ref="ASYNC_DAO_APPENDER"/>
+        </logger>
+        <logger name="com.na.exceptions" additivity="true" level="${LV_CONSOLE}">
+            <appender-ref ref="ASYNC_EXCEPTION_APPENDER"/>
         </logger>
     </springProfile>
 
