@@ -65,13 +65,20 @@ public class OpenApiConfig {
         return openApi -> openApi.getPaths().values().forEach(pathItem ->
                 pathItem.readOperations().forEach(operation -> {
 
+                    Parameter tokenHeader = new Parameter();
+                    tokenHeader.setName(IGlobalConst.SECURITY.HEADER_STRING);
+                    tokenHeader.setIn("header");
+                    tokenHeader.setRequired(false);
+                    tokenHeader.setDescription("用户登录令牌");
+                    tokenHeader.setSchema(new StringSchema());
+                    operation.addParametersItem(tokenHeader);
+
                     Parameter requestSourceHeader = new Parameter();
                     requestSourceHeader.setName(IGlobalConst.SECURITY.REQUEST_SOURCE);
                     requestSourceHeader.setIn("header");
                     requestSourceHeader.setRequired(false);
                     requestSourceHeader.setDescription("请求来源标识");
                     requestSourceHeader.setSchema(new StringSchema());
-
                     operation.addParametersItem(requestSourceHeader);
                 })
         );
