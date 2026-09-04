@@ -6,6 +6,7 @@ import com.na.common.result.enums.Status;
 import com.na.common.syslog.dto.SysLogDto;
 import com.na.common.syslog.util.LogEventUtil;
 import com.na.common.utils.LocalLangUtil;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.HandlerMethod;
 
 import java.io.PrintWriter;
@@ -57,9 +59,9 @@ import java.util.stream.Collectors;
  * </ul>
  */
 @Slf4j
-@ControllerAdvice
-@ResponseBody
+@RestControllerAdvice
 @ConditionalOnProperty(name = "na.api.exception.handler", havingValue = "true", matchIfMissing = true)
+@Hidden
 public class ApiExceptionHandler {
 
     @Autowired
@@ -313,7 +315,6 @@ public class ApiExceptionHandler {
      * @param e 业务异常
      * @return 返回统一的错误响应对象
      */
-    @Order(1)
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Result<?>> handleBusinessException(BusinessException e) {
         try {
@@ -334,7 +335,6 @@ public class ApiExceptionHandler {
      * @param e 运行时异常
      * @return 返回统一的错误响应对象
      */
-    @Order(999)
     @ExceptionHandler(RuntimeException.class)
     public Result<?> handleRuntimeException(RuntimeException e) {
         try {
@@ -367,7 +367,6 @@ public class ApiExceptionHandler {
      * @param response HttpServletResponse
      * @return 返回统一的错误响应对象
      */
-    @Order(200)
     @ExceptionHandler(Exception.class)
     public Result<?> handleException(Exception e, HandlerMethod method, HttpServletResponse response) {
         try {

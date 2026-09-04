@@ -7,7 +7,9 @@ import com.alibaba.fastjson2.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.*;
@@ -26,10 +28,8 @@ import java.util.function.Supplier;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        name = "spring.data.redis.host",
-        matchIfMissing = false
-)
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redis.enable:false}'.equals('true')")
 public class CacheTemplateUtil {
 
     private final RedisTemplate<String, Object> redisTemplate;
