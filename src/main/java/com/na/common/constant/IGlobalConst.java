@@ -31,19 +31,27 @@ public interface IGlobalConst {
 
 
         String[] SKIP_URLS = new String[]{
+                // SpringDoc OpenAPI3（重点新增）
+                "/v3/api-docs",
+                "/v3/api-docs/**",
+                // knife4j增强doc.html
+                "/doc.html",
+                "/webjars/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+
+                // 旧swagger2兼容（保留也没关系，现在不用）
                 "/v2/api-docs",
                 "/v2/*",
                 "/*/api-docs",
-                "/druid/**",
-                "/swagger-ui.html",
-                "/doc.html",
                 "/swagger-resources/**",
-                "/webjars/**",
+
+                "/druid/**",
                 "/csrf",
                 "/favicon.ico",
                 "/static/**",
                 "/web/**",
-                "/index/**",
+                "/index/**"
         };
         String[] ACTUATOR_URLS = new String[]{"/actuator", "/", "/actuator/**" };
 
