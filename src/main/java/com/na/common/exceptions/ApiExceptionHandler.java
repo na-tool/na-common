@@ -20,6 +20,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -368,7 +369,7 @@ public class ApiExceptionHandler {
      * @return 返回统一的错误响应对象
      */
     @ExceptionHandler(Exception.class)
-    public Result<?> handleException(Exception e, HandlerMethod method, HttpServletResponse response) {
+    public Result<?> handleException(Exception e, @Nullable HandlerMethod method, HttpServletResponse response) {
         try {
             log.error("Unhandled Exception: {}", e.getMessage(), e);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
