@@ -891,7 +891,7 @@ public class CacheTemplateUtil {
      * @return true成功 false失败
      *
      */
-    public boolean hmset(String key, Map<String, Object> map, long time,TimeUnit unit) {
+    public boolean hmSet(String key, Map<String, Object> map, long time,TimeUnit unit) {
         try {
             redisTemplate.opsForHash().putAll(key, map);
             if (time > 0) {

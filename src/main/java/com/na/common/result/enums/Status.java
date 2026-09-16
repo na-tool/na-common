@@ -25,6 +25,8 @@ public enum Status implements IStatusProvider {
     SUCCESS(1, "success", "成功", "success"),
     TEST(999, "test", "测试", "test"),
 
+    DATE_NOT_EXIST(10000, "Internal Server Error: {0}", "数据不存在: {0}", "data.not.exist"),
+
     // 权限验证 & 服务器
     USER_NEED_AUTHORITIES(401, "please login", "未登录", "unauthorized"),
     USER_NO_ACCESS(403, "access denied", "无权访问", "forbidden"),
