@@ -68,8 +68,13 @@ public interface IGlobalConst {
 
         // 1默认启用 0关闭
         interface STATUS{
-            Boolean ENABLE = Boolean.TRUE;
-            Boolean DISABLE = Boolean.FALSE;
+            Integer ENABLE = 1;
+            Integer DISABLE = 0;
+
+            /** 正常（对应数据库 0） */
+            Boolean NORMAL = Boolean.FALSE;
+            /** 停用（对应数据库 1） */
+            Boolean DISABLED = Boolean.TRUE;
         }
 
         interface SYS_MENU_DATA_SCOPE {
