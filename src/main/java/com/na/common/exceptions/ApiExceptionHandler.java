@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.HandlerMethod;
 
 import java.io.PrintWriter;
@@ -364,18 +365,23 @@ public class ApiExceptionHandler {
      * <p>根据方法上 @NaApiException 注解返回不同状态码和错误信息, 错误信息同样支持国际化
      *
      * @param e        未捕获异常
-     * @param method   当前处理请求的方法(可能为 null)
+     * @param webRequest   当前处理请求的方法(可能为 null)
      * @param response HttpServletResponse
      * @return 返回统一的错误响应对象
      */
     @ExceptionHandler(Exception.class)
-    public Result<?> handleException(Exception e, @Nullable HandlerMethod method, HttpServletResponse response) {
+    public Result<?> handleException(Exception e, WebRequest webRequest, HttpServletResponse response) {
         try {
             log.error("Unhandled Exception: {}", e.getMessage(), e);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-            // method 可能为 null(Filter 层异常等场景), 加防护避免 NPE
+            HandlerMethod method = null;
+            Object handlerAttr = webRequest.getAttribute(HandlerMethod.class.getName(), WebRequest.SCOPE_REQUEST);
+            if (handlerAttr instanceof HandlerMethod hm) {
+                method = hm;
+            }
+
             if (method != null) {
                 ApiException apiException = method.getMethodAnnotation(ApiException.class);
                 if (apiException != null) {
