@@ -1,10 +1,7 @@
 package com.na.common.exceptions;
 
-import com.na.common.constant.GlobalConst;
 import com.na.common.result.Result;
 import com.na.common.result.enums.Status;
-import com.na.common.syslog.dto.SysLogDto;
-import com.na.common.syslog.util.LogEventUtil;
 import com.na.common.utils.LocalLangUtil;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,8 +29,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.HandlerMethod;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,7 +36,10 @@ import java.util.stream.Collectors;
 /**
  * 全局异常处理器: 统一拦截 Controller 层异常, 按类型返回标准化 {@link Result} 响应
  * <p>
- * 处理流程: 捕获异常 → 国际化消息 → 记录日志(SysLogDto) → 返回统一响应
+ * 处理流程: 捕获异常 → 国际化消息 → 记录 slf4j 日志 → 返回统一响应
+ * <p>
+ * 异常落库不属于本类职责: 需要持久化异常日志的宿主接入 na-log, 由其 OperationLogAspect
+ * 采集。本类只写 slf4j, 不依赖任何日志模块。
  * <p>
  * 生效条件: {@code na.api.exception.handler} 未显式置为 false(默认开启)
  * <p>
@@ -69,9 +67,6 @@ public class ApiExceptionHandler {
     @Autowired
     private Environment environment;
 
-    @Autowired
-    private LogEventUtil logEventUtil;
-
     // === 私有工具方法 ===
 
     /**
@@ -92,37 +87,6 @@ public class ApiExceptionHandler {
         }
         String localized = LocalLangUtil.get(key);
         return localized != null ? localized : message;
-    }
-
-    /**
-     * 获取异常堆栈字符串
-     *
-     * @param e 异常
-     * @return 堆栈文本
-     */
-    private String getStackTrace(Throwable e) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw, true));
-        return sw.toString();
-    }
-
-    /**
-     * 记录异常到数据库日志(SysLogDto) + 发布事件
-     * <p>异常详情 = 堆栈 + detail(业务补充信息)
-     *
-     * @param e      异常
-     * @param detail 补充详情(如错误消息), 允许空串
-     */
-    private void logAndPublish(Throwable e, String detail) {
-        try {
-            SysLogDto sysLogDto = new SysLogDto();
-            sysLogDto.setType(GlobalConst.EX);
-            sysLogDto.setExDesc("日志记录异常");
-            sysLogDto.setExDetail(getStackTrace(e) + detail);
-            logEventUtil.publishEvent(sysLogDto);
-        } catch (Exception ex) {
-            log.error("记录异常日志失败", ex);
-        }
     }
 
     /**
@@ -156,10 +120,9 @@ public class ApiExceptionHandler {
                     .map(this::i18n)
                     .collect(Collectors.joining(", "));
             log.error("MethodArgumentNotValidException: {}", errors);
-            logAndPublish(e, errors);
             return Result.errorWithArgs(errors);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
@@ -178,10 +141,9 @@ public class ApiExceptionHandler {
                     .map(this::i18n)
                     .collect(Collectors.joining(", "));
             log.error("BindException: {}", errors);
-            logAndPublish(e, errors);
             return Result.errorWithArgs(errors);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
@@ -197,10 +159,9 @@ public class ApiExceptionHandler {
         try {
             log.error("Missing request parameter: {}", e.getParameterName(), e);
             String message = i18n("缺少必要的请求参数: " + e.getParameterName());
-            logAndPublish(e, message);
             return Result.errorWithArgs(message);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
@@ -220,10 +181,9 @@ public class ApiExceptionHandler {
                     .map(this::i18n)
                     .collect(Collectors.joining(", "));
             log.error("ConstraintViolationException: {}", errors);
-            logAndPublish(e, errors);
             return Result.errorWithArgs(errors);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
@@ -241,11 +201,10 @@ public class ApiExceptionHandler {
         try {
             String msg = i18n(e.getMessage());
             log.error("IllegalStateException: {}", msg, e);
-            logAndPublish(e, msg);
             return ResponseEntity.status(HttpStatus.OK)
                     .body(Result.errorWithArgs(Status.USER_NO_ACCESS, msg));
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return ResponseEntity.status(HttpStatus.OK).body(Result.errorWithArgs(ex));
         }
     }
@@ -261,10 +220,9 @@ public class ApiExceptionHandler {
         try {
             log.error("NullPointerException: {}", e.getMessage(), e);
             String msg = i18n("空值异常，请联系管理员");
-            logAndPublish(e, msg);
             return Result.errorWithArgs(Status.INTERNAL_SERVER_ERROR_ARGS, msg);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
@@ -282,11 +240,10 @@ public class ApiExceptionHandler {
         try {
             String msg = i18n(e.getMessage());
             log.error("UnauthorizedException: {}", msg);
-            logAndPublish(e, msg);
             return ResponseEntity.status(e.getStatus())
                     .body(Result.errorWithArgs(Status.USER_NEED_AUTHORITIES, msg));
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return ResponseEntity.status(e.getStatus()).body(Result.errorWithArgs(ex));
         }
     }
@@ -302,11 +259,10 @@ public class ApiExceptionHandler {
         try {
             String msg = i18n(e.getMessage());
             log.error("ForbiddenException: {}", msg);
-            logAndPublish(e, msg);
             return ResponseEntity.status(e.getStatus())
                     .body(Result.errorWithArgs(Status.USER_NO_ACCESS, msg));
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return ResponseEntity.status(e.getStatus()).body(Result.errorWithArgs(ex));
         }
     }
@@ -322,10 +278,9 @@ public class ApiExceptionHandler {
         try {
             String msg = i18n(e.getMessage());
             log.error("BusinessException: {}", msg, e);
-            logAndPublish(e, msg);
             return ResponseEntity.status(e.getStatus()).body(Result.exception(msg));
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return ResponseEntity.status(e.getStatus()).body(Result.errorWithArgs(ex));
         }
     }
@@ -346,16 +301,14 @@ public class ApiExceptionHandler {
                 BusinessException bizEx = (BusinessException) rootCause;
                 String msg = i18n(bizEx.getMessage());
                 log.error("BusinessException(wrapped): {}", msg, bizEx);
-                logAndPublish(bizEx, msg);
                 return Result.errorWithArgs(msg);
             }
 
             log.error("RuntimeException: {}", e.getMessage(), e);
             String msg = i18n("服务器发生运行时错误，请稍后再试");
-            logAndPublish(e, msg);
             return Result.errorWithArgs(Status.INTERNAL_SERVER_ERROR_ARGS, msg);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
@@ -395,7 +348,6 @@ public class ApiExceptionHandler {
                     }
 
                     Status status = apiException.value();
-                    logAndPublish(e, status.toString());
                     return (status.getCode() == Status.DEFAULT.getCode()
                             || status.getCode() == Status.SUCCESS.getCode())
                             ? Result.error(status)
@@ -404,10 +356,9 @@ public class ApiExceptionHandler {
             }
 
             String i18nMsg = i18n(e.getMessage());
-            logAndPublish(e, i18nMsg);
             return Result.errorWithArgs(Status.INTERNAL_SERVER_ERROR_ARGS, i18nMsg);
         } catch (Exception ex) {
-            logAndPublish(ex, "");
+            log.error("异常处理链路自身出错", ex);
             return Result.errorWithArgs(ex);
         }
     }
