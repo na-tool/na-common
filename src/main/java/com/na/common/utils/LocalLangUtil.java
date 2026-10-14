@@ -1,9 +1,9 @@
 package com.na.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.stereotype.Component;
 
 import java.util.Locale;
 
@@ -23,7 +23,7 @@ import java.util.Locale;
  * }</pre>
  */
 @Slf4j
-@Component
+// 注册由 NaCommonAutoConfiguration 的注册器接管
 public class LocalLangUtil {
 
     /** 由构造器注入的容器 MessageSource; 非 Spring 环境下为 null, get 方法会走兜底逻辑 */
@@ -31,11 +31,14 @@ public class LocalLangUtil {
 
     /**
      * 构造注入: 利用实例注入为静态字段赋值(本类为纯静态调用工具)
+     * <p>参数用 {@link ObjectProvider} 而非直接依赖 MessageSource: 注入由
+     * {@code AUTOWIRE_CONSTRUCTOR} 完成, 直接声明 MessageSource 会让它变成必填依赖,
+     * 缺失时整个上下文启动失败 —— 这不该由一个工具类强加给宿主
      *
-     * @param messageSource 容器中的 MessageSource(Spring Boot 默认或 WebI18nConfigure 提供的实例)
+     * @param messageSourceProvider 容器中的 MessageSource 提供者(可能为空)
      */
-    public LocalLangUtil(MessageSource messageSource) {
-        LocalLangUtil.messageSource = messageSource;
+    public LocalLangUtil(ObjectProvider<MessageSource> messageSourceProvider) {
+        LocalLangUtil.messageSource = messageSourceProvider.getIfAvailable();
     }
 
     /**

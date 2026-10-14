@@ -150,7 +150,4 @@ public final class MoneyUtil {
         return negative ? CN_NEGATIVE + result : result;
     }
 
-    public static void main(String[] args) {
-        System.out.println(convertToChineseUpper(new BigDecimal("15451871.5")));
-    }
 }

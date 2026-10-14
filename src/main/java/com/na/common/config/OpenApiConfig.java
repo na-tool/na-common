@@ -12,7 +12,6 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
@@ -20,7 +19,6 @@ import java.util.List;
  * OpenApi 接口文档配置
  * na.swagger.enable=true 开启文档；缺失配置默认开启
  */
-@Configuration
 @ConditionalOnProperty(
         name = "na.swagger.enable",
         havingValue = "true",

@@ -12,7 +12,6 @@ public class BaseController {
      * @return check result code
      */
     public Status checkPageParams(int pageNo, int pageSize) {
-        String msg = Status.SUCCESS.getMsg();
         if (pageNo <= 0) {
             return Status.PARAM_PAGE_NO_NOT_VALID;
         }

@@ -12,21 +12,24 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * 针对 JSON 字符串字段的 XSS 防护反序列化器
  * <p>
  * 在 Jackson 反序列化 {@code @RequestBody} 的 String 字段时自动清洗 XSS 攻击代码。
- * 支持两种模式:
+ * 支持两种模式, 两者都是安全且无损于语义的:
  * <ul>
- *   <li>默认模式: 正则匹配并删除危险标签/事件(如 {@code <script>}, {@code onclick=})</li>
- *   <li>{@link XssEscapeOnly} 模式: 仅 HTML 转义特殊字符, 保留原文</li>
+ *   <li><b>默认模式</b>: 移除全部 HTML 标签 —— 事件处理器必须依附在标签内,
+ *       标签整体消失后就没有可执行的向量, 因此不存在"绕过"</li>
+ *   <li>{@link XssEscapeOnly} 模式: 把 HTML 特殊字符转义为实体, 原样保留文本</li>
  * </ul>
- * 通过 {@link AutoXssConfig} 的 excludePaths 排除特定路径不做过滤
+ * <p><b>为什么不再按事件名做黑名单匹配</b>: 黑名单只能穷举已知写法,
+ * {@code <img src=x onerror=alert(1)>}、{@code <svg onload=...>} 这类无引号属性
+ * 可以直接穿过, 属可绕过的防护。默认模式改为"整标签移除"后不再依赖枚举攻击特征。
+ * <p><b>富文本字段</b>：默认模式会去掉格式标记。若某字段确实要保留 HTML 并在前端渲染,
+ * 请在应用层做白名单净化（如 OWASP Java HTML Sanitizer）；本类不做不安全的放行。
+ * <p>通过 {@link AutoXssConfig} 的 excludePaths 排除特定路径不做过滤
  */
 public class XssStringJsonDeserializer extends JsonDeserializer<String> implements ContextualDeserializer {
 
@@ -59,71 +62,13 @@ public class XssStringJsonDeserializer extends JsonDeserializer<String> implemen
         this.escapeOnly = escapeOnly;
     }
 
-    // === XSS 正则规则 ===
-
-    /** 原始正则表达式列表 */
-    private static final List<String> REGEX_LIST = new ArrayList<>();
-
-    /** 预编译的正则数组(避免每次调用重新编译, 性能提升明显) */
-    private static final Pattern[] COMPILED_PATTERNS;
-
-    /** 所有正则拼接的统一表达式(用于 containsXss 快速检测) */
-    private static final Pattern XSS_COMBINED_PATTERN;
-
-    static {
-        REGEX_LIST.add("alert\\s*\\((.*?)\\)");
-        REGEX_LIST.add("expression\\s*\\((.*?)\\)");
-        REGEX_LIST.add("<script(\\s*)>(.*?)</script(\\s*)>");
-        REGEX_LIST.add("<style(\\s*)>(.*?)</style(\\s*)>");
-        REGEX_LIST.add("<applet(.*?)/>|<applet(.*?)>(.*?)</applet(\\s*)>");
-        REGEX_LIST.add("<object(.*?)/>|<object(.*?)>(.*?)</object(\\s*)>");
-        REGEX_LIST.add("<embed(.*?)/>|<embed(.*?)>(.*?)</embed(\\s*)>");
-        REGEX_LIST.add("eval\\s*\\((.*?)\\)");
-        REGEX_LIST.add("\\'javascript(\\s*):(.*?)\\'|\\\"javascript(\\s*):(.*?)\\\"");
-        REGEX_LIST.add("\\'vbscript(\\s*):(.*?)\\'|\\\"vbscript(\\s*):(.*?)\\\"");
-        REGEX_LIST.add("<iframe\\s+(.*?)/>|<iframe\\s+(.*?)>(.*?)</iframe(\\s*)>");
-        REGEX_LIST.add("(\\s+)onmouseover\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onmouseover\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onmouseout\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onmouseout\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onmousedown\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onmousedown\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onmouseup\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onmouseup\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onmousemove\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onmousemove\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onclick\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onclick\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)ondblclick\\s*=(\\s*)\\'(.*?)\\'|(\\s+)ondblclick\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onkeypress\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onkeypress\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onkeydown\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onkeydown\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onkeyup\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onkeyup\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)ondragstart\\s*=(\\s*)\\'(.*?)\\'|(\\s+)ondragstart\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onerrorupdate\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onerrorupdate\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onhelp\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onhelp\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onreadystatechange\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onreadystatechange\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onrowenter\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onrowenter\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onrowexit\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onrowexit\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onselectstart\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onselectstart\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onload\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onload\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onunload\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onunload\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onbeforeunload\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onbeforeunload\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onblur\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onblur\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onerror\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onerror\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onfocus\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onfocus\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onresize\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onresize\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onscroll\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onscroll\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)oncontextmenu\\s*=(\\s*)\\'(.*?)\\'|(\\s+)oncontextmenu\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onbounce\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onbounce\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onfinish\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onfinish\\s*=(\\s*)\\\"(.*?)\\\"");
-        REGEX_LIST.add("(\\s+)onstart\\s*=(\\s*)\\'(.*?)\\'|(\\s+)onstart\\s*=(\\s*)\\\"(.*?)\\\"");
-
-        // 预编译所有正则, 避免每次调用重新编译
-        COMPILED_PATTERNS = new Pattern[REGEX_LIST.size()];
-        StringBuilder combined = new StringBuilder();
-        for (int i = 0; i < REGEX_LIST.size(); i++) {
-            String regex = REGEX_LIST.get(i);
-            COMPILED_PATTERNS[i] = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-            if (combined.length() > 0) combined.append("|");
-            combined.append("(").append(regex).append(")");
-        }
-        XSS_COMBINED_PATTERN = Pattern.compile(combined.toString(),
-                Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
-    }
+    /**
+     * 匹配任意 HTML 标签。
+     * <p>闭合的 {@code >} 是可选的: 未闭合的写法（如 {@code <img src=x onerror=alert(1)}）
+     * 在浏览器容错解析下同样会形成标签并触发事件处理器，因此必须一并移除。
+     * <p>{@code [^<>]*} 保证匹配不跨越标签边界, 不会把两段正常文本一起吃掉。
+     */
+    private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^<>]*>?", Pattern.DOTALL);
 
     /**
      * 实际的 JSON 字段反序列化逻辑
@@ -165,32 +110,33 @@ public class XssStringJsonDeserializer extends JsonDeserializer<String> implemen
     }
 
     /**
-     * 用预编译正则删除 XSS 攻击代码
+     * 移除字符串中的全部 HTML 标签
+     * <p>标签成对消失后标签之间的纯文本会保留（如 {@code <b>粗体</b>} → {@code 粗体}）；
+     * 裸的 {@code <} 也会被移除，这是"宁可多删不可漏放"的取舍。
      *
      * @param value 原始字符串
-     * @return 清洗后的字符串; null 输入返回 null
+     * @return 移除标签后的字符串; null 输入返回 null
      */
     public static String xssScriptReplace(String value) {
         if (value == null) {
             return null;
         }
-        for (Pattern pattern : COMPILED_PATTERNS) {
-            value = pattern.matcher(value).replaceAll("");
-        }
-        return value;
+        return HTML_TAG_PATTERN.matcher(value).replaceAll("");
     }
 
     /**
-     * 判断输入字符串是否包含可能的 XSS 攻击代码
+     * 判断输入字符串中是否含有 HTML 标签
+     * <p>判定口径与 {@link #xssScriptReplace(String)} 完全一致:
+     * "含有标签"即"需要清洗"。名字沿用历史 API，语义以本注释为准。
      *
      * @param input 待检测的输入字符串
-     * @return true 包含 XSS 攻击代码; false 不包含或输入为 null
+     * @return true 含 HTML 标签; false 不含或输入为 null
      */
     public static boolean containsXss(String input) {
         if (input == null) {
             return false;
         }
-        return XSS_COMBINED_PATTERN.matcher(input).find();
+        return HTML_TAG_PATTERN.matcher(input).find();
     }
 
     /**

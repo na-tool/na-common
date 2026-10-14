@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "path": "src/main/resources/address.json",
+      "decision": "include",
+      "role": "中国行政区划静态参考数据，省/市/区/街道四级树形结构，供 RegionUtil 构建编码索引",
+      "reason": "物理画像为 oversize(1.9MB)而无法自动起草，但其语义不可从源码推导：行政区划编码存在 2 位省级码与 6 位省级码两种形态，RegionUtil.getRegionByCode 对 6 位码有特殊降级兼容，且节点通过 parentCode 反向挂载后才支持 getFullPath 逆向追溯。收录可防止后续修改者误判数据形态或破坏该兼容约定。",
+      "confidence": 92,
+      "source_sha256": "57674a6f0a86cf1c0173a15779742c4cf8efa841e8e712cd3e9d46a8966ecb32",
+      "agent": "claude",
+      "model": "deepseek-v4-flash[1m]",
+      "updated_at": "2026-09-24T10:00:58Z"
+    },
+    {
+      "path": "src/main/resources/ip2region.xdb",
+      "decision": "include",
+      "role": "ip2region 离线 IP 归属地查询二进制数据库，供 IpParseUtil 解析 IP 所属国家/区域/省份/城市/ISP",
+      "reason": "物理画像为 oversize 且二进制(11MB)，无法自动起草，但其关键约束不可从数据本身推导：IpParseUtil 在类加载时全量载入内存并构造进程级共享 Searcher 单例，明确禁止调用 close()，否则内部缓冲区释放将导致后续全部解析失败；且 region 返回格式固定为 国家|区域|省份|城市|ISP。收录可防止后续修改者误加 close 或替换数据文件时不匹配。",
+      "confidence": 93,
+      "source_sha256": "867b619b567f51bb9dd3c384a4cbf7c33e71a178aa58f13201499aadaf2cf78e",
+      "agent": "claude",
+      "model": "deepseek-v4-flash[1m]",
+      "updated_at": "2026-09-24T10:00:58Z"
+    }
+  ]
+}

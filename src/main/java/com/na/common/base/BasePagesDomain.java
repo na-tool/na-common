@@ -68,16 +68,17 @@ public class BasePagesDomain<T> {
         BasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder().totalList(data);
         if(page != null){
             builder.currentPage(page.getCurrent())
-                    .pageSize(page.getTotal())
+                    .pageSize(page.getSize())
                     .totalPage(page.getPages())
-                    .total(page.getSize());
+                    .total(page.getTotal());
         }
         return builder.build();
     }
 
     public static <B> BasePagesDomain<B> pages(Page<B> page) {
+        // 判空必须在取记录之前, 否则防御分支形同虚设
         BasePagesDomainBuilder<B> builder = BasePagesDomain.<B>builder()
-                .totalList(page.getRecords());
+                .totalList(page != null ? page.getRecords() : new ArrayList<>());
         if (page != null) {
             builder.currentPage(page.getCurrent())
                     .pageSize(page.getSize())

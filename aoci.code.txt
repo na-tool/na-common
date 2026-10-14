@@ -1,0 +1,184 @@
+#AOCI-CODE-VOLUME: 1
+
+===D:/dev/PG/na-tools/na-common/===
+.gitattributes[CG4T]: F:统一仓库文本文件检出为 LF 行尾, 覆盖 Windows autocrlf 重写 | R:- | A:- | S:必须保持 * text=auto eol=lf; AOCI 基线按原始字节比对, 行尾重写会把整棵树标记为 stale
+.gitignore[CG5T]: F:排除构建产物、IDE 工程文件与按机器绑定的代理宿主配置 | R:code:AGENTS.md | A:- | S:末尾 .mcp.json 规则由 aoci init 写入; 该文件含本机 aoci 二进制绝对路径, 提交到其他机器会静默失效, 不可移除或改为跟踪
+AGENTS.md[CG8S]: F:定义本仓库的 AOCI 接入方式, 以及模型建立、复用、维护认知与任务收尾的规则 | R:- | A:- | S:本区块只规定接入与收尾原则; 当前 Guide、工具 Schema、Spec 与 Validator 才是权威机器事实, 不得据本文件自行重建索引生成或故障恢复流程
+help.md[SG5L]: F:面向使用方的公共模块手册: 依赖引入、配置项总表、状态码表与各功能用法 | R:code:pom.xml | A:- | S:3.0.0 起本文件是唯一事实源(resources 下的副本已删除); 配置项键名需与代码逐字对应, 改动开关时同步更新 3.14; 状态码变更同步 3.15 并通知前端
+pom.xml[CV8M]: F:定义 na-common 的 Maven 坐标、Spring Boot 3.5.16 父级与 JDK 17, 声明全部 provided 依赖、测试依赖及中央仓库发布、GPG 签名、源码与 javadoc 插件 | R:code:src/main/resources/ip2region.xdb,code:src/main/resources/address.json | A:Maven 构建与 Sonatype 中央仓库发布 | S:除 Spring Boot 受管项外几乎全部依赖都是 provided, 版本由接入方决定; nonFilteredFileExtensions 必须保留 xdb 与 json, 否则这两个大资源会被资源过滤损坏; spring-boot-starter-test 是 test scope 不传递给下游; autoPublish=false 时需手工放行 staging
+
+===D:/dev/PG/na-tools/na-common/.idea/===
+.gitignore[XC2T]: F:声明 IDEA 工程目录内按机器忽略的本地文件 | R:- | A:- | S:-
+encodings.xml[XC2T]: F:固定 IDEA 工程与 src/main/java 的文件编码为 UTF-8 | R:- | A:- | S:-
+misc.xml[XC3T]: F:IDEA 工程元数据: 外部存储配置、Maven 工程根指向 pom.xml、JDK 17 语言级别 | R:code:pom.xml | A:- | S:-
+vcs.xml[XC2T]: F:声明工程目录与上级目录两处 Git 仓库映射 | R:- | A:- | S:-
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/annotation/===
+EnableNA.java[EG6T]: F:NA 框架可选启动注解, 组合 Servlet 组件扫描、AOP、异步与 MyBatis Mapper 扫描 | R:- | A:可选, 标注在 @SpringBootApplication 之上 | S:3.0.0 起 na-common 自身 Bean 已由自动装配注册, 本注解不再是必需; 已移除 @ComponentScan("com.na"), 宿主散落在主类包子树之外但在 com.na.* 下的组件不会再被扫描到且不会报错
+ExcelExportColumn.java[FG5T]: F:声明导出列的表头名、排序号与日期格式 | R:code:src/main/java/com/na/common/utils/ExcelExportResultUtil.java | A:- | S:-
+ExcelImportColumn.java[FG5T]: F:声明导入列按 0 起算的列索引与可选列名 | R:code:src/main/java/com/na/common/utils/ExcelImportResultUtil.java | A:- | S:-
+NoRepeatSubmit.java[FS6T]: F:基于用户 ID 的防重复提交注解, 声明时间窗口、允许次数、提示文案与剩余时间展示 | R:code:src/main/java/com/na/common/aop/NoRepeatSubmitAOP.java | A:- | S:value 单位为毫秒; requestParams 为 true 时按请求参数分别计数, 会显著放大 Redis key 数量
+NoRepeatSubmitIP.java[FS6T]: F:基于客户端 IP 的防重复提交注解, 参数集与 NoRepeatSubmit 一致 | R:code:src/main/java/com/na/common/aop/NoRepeatSubmitIPAOP.java | A:- | S:按 IP 计数, 同一 NAT 出口下的多个用户会共享同一份提交配额
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/aop/===
+NoRepeatSubmitAOP.java[MS6T]: F:拦截 @NoRepeatSubmit 方法, 以 Redis 计数限制同一用户在时间窗口内的提交次数 | R:code:src/main/java/com/na/common/aop/AbstractRepeatSubmitAspect.java,code:src/main/java/com/na/common/aop/RepeatSubmitRule.java,code:src/main/java/com/na/common/aop/service/INoRepeatSubmitUserService.java | A:- | S:依赖宿主提供 INoRepeatSubmitUserService; 容器里没有该 Bean 时不注册本切面并打印 WARN, 因此只想用 IP 维度防重的宿主不会启动失败
+NoRepeatSubmitIPAOP.java[MS6T]: F:拦截 @NoRepeatSubmitIP 方法, 以 Redis 计数限制同一 IP 在时间窗口内的提交次数 | R:code:src/main/java/com/na/common/aop/AbstractRepeatSubmitAspect.java,code:src/main/java/com/na/common/utils/AddressUtil.java | A:- | S:只依赖客户端 IP 与请求路径, 不需要用户体系实现, 与 INoRepeatSubmitUserService 是否存在无关; AddressUtil 取不到 IP 时返回空串, 此处会据此放行并告警
+AbstractRepeatSubmitAspect.java[MS7S]: F:防重复提交切面的公共骨架: 请求上下文检查 → 组装 key → 原子自增计数 → 超限拒绝 | R:code:src/main/java/com/na/common/aop/NoRepeatSubmitAOP.java,code:src/main/java/com/na/common/aop/NoRepeatSubmitIPAOP.java,code:src/main/java/com/na/common/utils/CacheTemplateUtil.java | A:- | S:可用性约定集中在这里——无请求上下文、计数主体取不到、Redis 不可用时一律放行并记日志而不阻断业务; 主体取不到会让所有请求共用一个 key 而互相误伤
+RepeatSubmitRule.java[MS4T]: F:两个防重注解的属性载体, 把注解属性与具体注解类型解耦 | R:code:src/main/java/com/na/common/annotation/NoRepeatSubmit.java,code:src/main/java/com/na/common/annotation/NoRepeatSubmitIP.java | A:- | S:两个注解属性完全一致, 新增属性必须同时补上两个 from 工厂方法, 否则会被静默忽略
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/aop/service/===
+INoRepeatSubmitUserService.java[II6T]: F:定义防重复提交所需的当前用户标识获取契约 | R:code:src/main/java/com/na/common/aop/NoRepeatSubmitAOP.java | A:由接入方实现并注册为 Bean | S:NoRepeatSubmitAOP 强制注入该接口, 接入方未提供实现时整个 AOP 无法装配; 实现返回 null 会使所有用户共用同一防重 key
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/base/===
+BaseController.java[CG4T]: F:提供分页参数校验, 按 pageNo 与 pageSize 是否为正返回统一状态码 | R:code:src/main/java/com/na/common/result/enums/Status.java | A:- | S:-
+BaseEntity.java[CD6T]: F:所有实体类的超类, 声明 String 类型主键并指定 INPUT 主键策略 | R:- | A:- | S:@TableId(type=IdType.INPUT) 要求主键由业务侧自行赋值, 不使用数据库自增, 也不触发 MyBatis-Plus 的自动 ID 生成
+BasePagesDomain.java[CD6S]: F:分页返回结果模型, 承载当前页/每页条数/总条数/总页数与数据列表, 并提供 MyBatis-Plus IPage 与 Page 的互转工厂方法 | R:code:src/main/java/com/na/common/base/BasePagesParam.java,code:src/main/java/com/na/common/base/BaseController.java | A:- | S:-
+BasePagesParam.java[CD5T]: F:分页查询参数基类, 提供当前页码、每页条数与模糊查询关键字 | R:code:src/main/java/com/na/common/base/BasePagesDomain.java | A:- | S:-
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/config/===
+CorsConfig.java[CS6T]: F:全局跨域配置, 注册 CorsFilter Bean 统一处理跨域与 OPTIONS 预检 | R:- | A:- | S:默认放行所有来源且同时开了 allowCredentials(true), 任意站点可携带 Cookie 跨域调用, 生产环境应收窄为具体域名; 经网关时建议置 na.cors.enable=false 由网关统一处理, 避免响应头重复
+ErrorPageConfig.java[CU5T]: F:将 401/403/404/500 错误状态码注册到内嵌 Web 容器的静态错误页映射, 替代容器原生 Whitelabel 页 | R:code:src/main/resources/static/404.html,code:src/main/resources/static/500.html | A:- | S:依赖 classpath:static 下存在同名 html, 缺失时会转发到不存在的页面; 错误页路径必须以 / 开头才能被容器正确转发
+FfmpegConfig.java[IG5T]: F:读取 na.ffmpeg.* 配置并在启动后注入 VideoConvertUtil 的静态字段 | R:code:src/main/java/com/na/common/utils/VideoConvertUtil.java | A:- | S:走静态字段注入而非依赖注入, 字段为 null 表示不覆盖, 由 VideoConvertUtil 继续按系统属性/环境变量/内置默认值解析
+JacksonConfig.java[MD6T]: F:注册自定义 JacksonModule 统一日期/Long/BigDecimal 序列化, 并按 na.xss.enabled 追加 String 反序列化的 XSS 过滤模块 | R:code:src/main/java/com/na/common/config/model/JacksonModule.java,code:src/main/java/com/na/common/xss/XssStringJsonDeserializer.java | A:- | S:生效条件是 na.jackson.enable=true 且 matchIfMissing=false, 与本包其他配置默认开启的惯例相反; Bean 名由 customizer 改为 naJacksonCustomizer, 原名过于通用易与宿主撞名
+MybatisPlusConfig.java[PD7S]: F:注册 MyBatis-Plus 拦截器链(分页与乐观锁) | R:code:src/main/java/com/na/common/base/BasePagesDomain.java | A:- | S:拦截器顺序为分页在前、乐观锁在后; 方言名非法时静默兜底 MYSQL 而不报错, 配置写错不会在启动时暴露; @EnableTransactionManagement 已上移到 NaCommonAutoConfiguration, 本类不再承载它
+OpenApiConfig.java[SG5T]: F:定义 OpenAPI 文档基础信息与 JWT bearer 全局鉴权方案, 并为所有接口追加认证头与请求来源头参数 | R:code:src/main/java/com/na/common/constant/IGlobalConst.java | A:- | S:鉴权方案名取自 IGlobalConst.SECURITY.HEADER_STRING, 与鉴权头名称共用同一常量; 文档标题/描述/联系人/版本在代码中固定, 不读 na.swagger.* 下的同名键
+RedisConfig.java[MD6T]: F:注册 RedisTemplate Bean, Key 用 String 序列化保证可读, Value 用 FastJson 序列化为 JSON | R:code:src/main/java/com/na/common/utils/CacheTemplateUtil.java | A:- | S:两个生效条件为 AND 关系, 必须用 @ConditionalOnExpression; 本类的 redisTemplate 会替换 Spring Boot 自动装配提供的同名默认实现(RedisTemplate<Object,Object>), 宿主自己声明的则保留
+RedisKeyExpirationListenerConfig.java[MM6T]: F:订阅 Redis __keyevent@*__:expired 模式并将 key 过期事件转交 IRedisKeyExpirationService 处理 | R:code:src/main/java/com/na/common/config/service/IRedisKeyExpirationService.java,code:src/main/java/com/na/common/config/RedisListenerConfig.java | A:- | S:必须先在 Redis 侧开启键空间通知(CONFIG SET notify-keyspace-events Ex), 否则收不到任何事件且无报错; 容器用 ObjectProvider 获取, 缺失时跳过订阅而不是启动失败
+RedisListenerConfig.java[MM5T]: F:注册 RedisMessageListenerContainer, 供业务方自行挂载 Pub/Sub 或 key 过期监听 | R:code:src/main/java/com/na/common/config/RedisKeyExpirationListenerConfig.java | A:- | S:生效条件是 redis host 非空且 na.redisListener.enable 或 na.redisMessage.enable 任一为 true(后者复用本容器); Bean 名由 container 改为 redisMessageListenerContainer, 原名过于通用会与宿主硬冲突
+RedissonConfig.java[MR6S]: F:手动注册 RedissonClient Bean, 复用 Spring Boot 的 RedisProperties 连接信息, 提供分布式锁等高级能力 | R:- | A:- | S:依赖 redisson-spring-data-35 桥接包而非 starter, 不会自动配置, 必须手动创建; SSL 判断用 getSsl().isEnabled(), isSsl() 在 Spring Boot 3 已移除
+RestConfig.java[IN6S]: F:注册 @LoadBalanced 的 RestTemplate Bean, 配置连接/读取超时与 UTF-8 消息转换器, 并同步 RestTemplateUtil 静态实例的超时 | R:code:src/main/java/com/na/common/utils/RestTemplateUtil.java | A:- | S:转换器列表不可清空, 只能首位插入 FastJson, 否则 multipart/form-data 与 text/* 响应失效; @LoadBalanced 是 @Qualifier 元注解, 由注册器显式补回 qualifier, 丢失时服务名调用在运行期静默失效
+SqlTimeConfig.java[PD6T]: F:MyBatis-Plus 元对象处理器, 插入时填充 createTime 与 isDel, 更新时填充 updateTime 并在逻辑删除时填 deleteTime | R:code:src/main/java/com/na/common/utils/DateTimeUtil.java | A:- | S:仅当实体存在对应 setter 时才填充; createTime 用 strictInsertFill(已存在值不覆盖), updateTime 用 setFieldValByName(强制覆盖); 注册时按 MetaObjectHandler 类型让位, 宿主自带实现时本类不注册
+WebI18nConfig.java[CL6S]: F:国际化配置, 注册 MessageSource、Session 级 LocaleResolver 与语言拦截器, 并按 na.staticWebSource 放行静态资源 | R:code:src/main/java/com/na/common/config/service/ILanguageService.java,code:src/main/java/com/na/common/utils/LocalLangUtil.java | A:- | S:语言优先级为 ?lang= 参数 > Accept-Language 首段 > 业务 ILanguageService > 默认中文; fallbackToSystemLocale=false 禁止回落到部署机系统语言; messageSource 接管 Boot 默认实现
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/config/custom/===
+CustomBigDecimalSerializer.java[MD5T]: F:将 BigDecimal 序列化为去尾零的普通十进制字符串, 避免科学计数法与精度丢失 | R:code:src/main/java/com/na/common/config/model/JacksonModule.java | A:- | S:输出为 JSON 字符串而非数字, 前端接收到的类型与数字不同
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/config/model/===
+JacksonModule.java[MD6T]: F:自定义 Jackson 模块, 统一 LocalDateTime/LocalDate/LocalTime 格式, 并把 Long 与 BigInteger 序列化为字符串防前端精度丢失 | R:code:src/main/java/com/na/common/config/custom/CustomBigDecimalSerializer.java,code:src/main/java/com/na/common/config/JacksonConfig.java | A:- | S:Long 与 BigInteger 序列化为字符串会改变 JSON 字段类型, 前端与第三方对接需按字符串解析
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/config/service/===
+ILanguageService.java[IL4T]: F:定义无 Accept-Language 请求头时由业务方决定当前语言的扩展点 | R:code:src/main/java/com/na/common/config/WebI18nConfig.java | A:由接入方按需实现 | S:可选依赖, 未提供实现时 i18n 优雅降级为默认中文而不报错
+IRedisKeyExpirationService.java[IM5T]: F:定义 Redis key 过期事件的业务处理契约 | R:code:src/main/java/com/na/common/config/RedisKeyExpirationListenerConfig.java | A:由接入方按需实现 | S:可选依赖, 未提供实现时监听器仍启动并跳过处理
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/constant/===
+GlobalConst.java[CG4T]: F:通用常量集合: 字符集、系统 Locale、HTTP/HTTPS 前缀与菜单类型标识 | R:code:src/main/java/com/na/common/constant/IGlobalConst.java | A:- | S:-
+IGlobalConst.java[CG7S]: F:全局常量接口, 集中定义安全头名、免鉴权路径、Feign 内部调用标识、缓存 key 前缀与系统状态/菜单等枚举常量 | R:code:src/main/java/com/na/common/constant/GlobalConst.java,code:src/main/java/com/na/common/feign/FeignAop.java,code:src/main/java/com/na/common/config/OpenApiConfig.java | A:- | S:接口内常量可被实现方直接继承引用, 无需前缀; SYS_MENU_DATA_SCOPE 的 DEPT 与 DEPT_CHILD 取值同为 "3"; STRING_KEY 已废弃, 它是随公开库发布的已知值而非密钥, na-auth 无配置时回退到它
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/csrf/===
+AutoCsrfConfig.java[FS5T]: F:CSRF 防护配置属性, 声明启用开关、空 Referer 放行开关、请求路径白名单与域名白名单 | R:code:src/main/java/com/na/common/csrf/CsrfFilter.java | A:- | S:作为 @ConfigurationProperties 注册, 开关字段 enabled 与 CsrfFilterConfig 的 @ConditionalOnProperty 读同一个键 na.csrf.enabled
+CsrfFilter.java[ES6S]: F:基于 Referer 的 CSRF 防护过滤器, 校验来源域名与路径白名单, 不通过则直接写出统一 Result JSON | R:code:src/main/java/com/na/common/csrf/AutoCsrfConfig.java,code:src/main/java/com/na/common/utils/CommonUtil.java | A:- | S:位于 DispatcherServlet 之前, 全局异常处理器接不到它抛的异常, 因此拒绝时自己写响应(HTTP 200 + 业务码 AUTHORIZATION_EXPIRED); 仅比较 host:port, 不校验协议与路径
+CsrfFilterConfig.java[ES4T]: F:在 na.csrf.enabled=true 时把 CsrfFilter 注册为拦截 /* 的 Servlet Filter, order=10 | R:code:src/main/java/com/na/common/csrf/CsrfFilter.java,code:src/main/java/com/na/common/csrf/AutoCsrfConfig.java | A:- | S:matchIfMissing=false, 不显式配置 na.csrf.enabled=true 时过滤器不生效
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/demo/===
+CityImport.java[SG2T]: F:Excel 导入示例模型, 演示 @ExcelImportColumn 的列索引映射 | R:code:src/main/java/com/na/common/annotation/ExcelImportColumn.java | A:- | S:位于 demo 包, 仅为使用示例, 非框架运行必需
+UserExport.java[SG2T]: F:Excel 导出示例模型, 演示 @ExcelExportColumn 的表头、排序与日期格式化 | R:code:src/main/java/com/na/common/annotation/ExcelExportColumn.java | A:- | S:同时演示 Date 与 LocalDateTime 两种日期类型的 dateFormat 用法
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/exceptions/===
+ApiException.java[FG5T]: F:标注在 Controller 方法上, 指定该方法抛出未捕获异常时返回的状态枚举 | R:code:src/main/java/com/na/common/exceptions/ApiExceptionHandler.java,code:src/main/java/com/na/common/result/enums/Status.java | A:- | S:由 ApiExceptionHandler 兜底处理 Exception 时读取; 默认值为 Status.DEFAULT
+ApiExceptionHandler.java[EG8L]: F:全局异常处理器, 按异常类型统一转换为 Result 响应, 附带国际化消息并记录 slf4j 日志 | R:code:src/main/java/com/na/common/exceptions/AbstractHttpStatusException.java,code:src/main/java/com/na/common/exceptions/BusinessException.java,code:src/main/java/com/na/common/exceptions/ApiException.java,code:src/main/java/com/na/common/result/Result.java | A:- | S:只写 slf4j 不发布异常落库事件; 异常处理链路自身出错时只回固定文案, 不回传异常类名与内部消息; BusinessException 分支保留其业务码; 兜底分支用 "不允许访问"/"未登录" 两条消息文本作为状态判定条件
+BusinessException.java[CG6T]: F:业务异常, 携带 HTTP 状态码与消息, 由 ApiExceptionHandler 转为对应 HTTP 响应 | R:code:src/main/java/com/na/common/exceptions/AbstractHttpStatusException.java,code:src/main/java/com/na/common/exceptions/ApiExceptionHandler.java,code:src/main/java/com/na/common/result/enums/IStatusProvider.java | A:- | S:按状态枚举构造时保留该枚举, 响应体因此能带上业务码; 按字符串构造时没有业务码; httpStatus 为 null 时由基类兜底 HTTP 200
+ForbiddenException.java[CG5T]: F:403 禁止访问异常, 表示用户已认证但无权限访问目标资源 | R:code:src/main/java/com/na/common/exceptions/AbstractHttpStatusException.java,code:src/main/java/com/na/common/exceptions/ApiExceptionHandler.java | A:- | S:-
+UnauthorizedException.java[CG5T]: F:401 未授权异常, 表示用户未登录或 token 失效 | R:code:src/main/java/com/na/common/exceptions/AbstractHttpStatusException.java,code:src/main/java/com/na/common/exceptions/ApiExceptionHandler.java | A:- | S:-
+AbstractHttpStatusException.java[CG5T]: F:携带 HTTP 状态码的异常基类, 三个业务异常共用状态码兜底与 getStatus | R:code:src/main/java/com/na/common/exceptions/BusinessException.java,code:src/main/java/com/na/common/exceptions/ForbiddenException.java,code:src/main/java/com/na/common/exceptions/UnauthorizedException.java | A:- | S:传入 status 为 null 时统一兜底 HTTP 200 (本模块约定业务失败用 HTTP 200 + 业务码表达), 需要 401/403 必须显式传入
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/feign/===
+Feign.java[FS5T]: F:标记方法为 Feign 内部调用入口, 由 FeignAop 校验内部调用标识请求头 | R:code:src/main/java/com/na/common/feign/FeignAop.java | A:- | S:仅在切面 FeignAop 启用时才有保护作用
+FeignAop.java[MS6T]: F:拦截 @Feign 方法, 校验请求头 from=Y 且 na-feign=Y, 否则抛 UnauthorizedException | R:code:src/main/java/com/na/common/feign/Feign.java,code:src/main/java/com/na/common/constant/IGlobalConst.java | A:- | S:生效条件 na.feign.enable=true 且 matchIfMissing=false; 拒绝时显式传 HttpStatus.UNAUTHORIZED, 传 null 会回退成 HTTP 200 导致客户端无法据此识别拒绝
+FeignInnerRequestInterceptor.java[IS5T]: F:Feign 请求拦截器, 自动注入 na-feign=Y(所有请求)与 from=Y(仅 @Token 方法)标识头 | R:code:src/main/java/com/na/common/feign/Token.java,code:src/main/java/com/na/common/feign/FeignAop.java | A:- | S:执行顺序为 Ordered.HIGHEST_PRECEDENCE; 宿主未引 feign-core 时本类不注册(注册器以类路径门禁拦住), 不会抛 NoClassDefFoundError
+Token.java[FS4T]: F:声明方法允许无 Token 访问, 由 FeignInnerRequestInterceptor 读取以决定是否注入 from=Y | R:code:src/main/java/com/na/common/feign/FeignInnerRequestInterceptor.java | A:- | S:仅影响 Feign 请求头的注入, 本身不参与服务端鉴权
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/result/===
+IResultInfoProvider.java[CG2T]: F:无方法的标记接口, 用于标识可作为统一响应封装的类型 | R:code:src/main/java/com/na/common/result/Result.java | A:- | S:-
+Result.java[CG8M]: F:通用响应封装类, 统一 {code, msg, data} 结构并提供成功、失败、异常与带参格式化等工厂方法 | R:code:src/main/java/com/na/common/result/enums/Status.java,code:src/main/java/com/na/common/result/enums/IStatusProvider.java,code:src/main/java/com/na/common/result/IResultInfoProvider.java | A:- | S:error(T data) 与 error(String msg) 重载易混淆; errorWithArgs(status,args) 用 MessageFormat 解析状态消息中的占位符, 业务文本含单引号时会被吞掉
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/result/enums/===
+IStatusProvider.java[CG6T]: F:状态提供者接口, 约定状态码、内置中英文消息、当前语言消息与 i18n key 五项能力 | R:code:src/main/java/com/na/common/result/enums/Status.java,code:src/main/java/com/na/common/exceptions/BusinessException.java | A:由状态枚举(如 Status)实现 | S:getMsg() 不读 i18n 文件, getLanguageMsg() 才读; 两者取值来源不同, 混用会导致同一响应在不同接口得到不同语言
+Status.java[CG8S]: F:通用响应状态枚举, 每项为 (code, 内置英文, 内置中文, i18n key) 四元组 | R:code:src/main/java/com/na/common/result/enums/IStatusProvider.java,code:src/main/java/com/na/common/utils/LocalLangUtil.java | A:- | S:3.0.0 起除 401 组外每个 code 唯一; 401 由 USER_NEED_AUTHORITIES/USER_AUTH_EXPIRED/USER_AUTHORITIES_EXPIRED 共用, 表示需要重新登录, 区分原因请用 msgKey; 修改 code 属对外协议变更, 需同步 3.15 状态码表
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/utils/===
+AddressUtil.java[CN6S]: F:访问地址工具类, 按代理头优先级提取客户端真实 IP, 同时支持 Servlet 与 Reactive 两种请求模型 | R:code:src/main/java/com/na/common/utils/CommonUtil.java,code:src/main/java/com/na/common/aop/NoRepeatSubmitIPAOP.java | A:- | S:代理头可被客户端伪造, 依赖它做安全控制时需确保请求经过可信代理; IPv6 回环 ::1 统一映射为 127.0.0.1; 多级代理时只取 X-Forwarded-For 第一段; 取不到时返回空串而非 null
+CacheTemplateUtil.java[MD7L]: F:Redis 缓存操作工具类, 封装字符串/哈希/列表/集合/有序集合、分布式锁、批量扫描与缓存回源等能力 | R:code:src/main/java/com/na/common/config/RedisConfig.java,code:src/main/java/com/na/common/aop/AbstractRepeatSubmitAspect.java | A:- | S:装配条件与 RedisConfig 一致(redis host 非空且 na.redis.enable=true); Value 以 FastJson 序列化, 取回自定义类型时需自行做类型还原; incrWithWindow 用 Lua 把 INCR 与首次设 TTL 合为一步
+CommonUtil.java[CG6L]: F:通用工具类, 提供链接判断、字符串脱敏、请求上下文获取与主机/IP/端口白名单匹配 | R:code:src/main/java/com/na/common/csrf/CsrfFilter.java,code:src/main/java/com/na/common/aop/NoRepeatSubmitIPAOP.java | A:- | S:匹配类方法对非法或 null 输入统一返回不匹配而不抛异常(含超范围 IP 段); 路径白名单正则按条目预编译缓存; isWindows 也被 VideoConvertUtil 复用
+DateTimeUtil.java[CG6L]: F:日期时间工具类, 统一以北京时间为默认时区, 提供 Date/LocalDateTime/字符串/毫秒时间戳互转与超时判断 | R:code:src/main/java/com/na/common/config/SqlTimeConfig.java,code:src/main/java/com/na/common/utils/IDUtil.java | A:- | S:带 ZoneId 的方法在 zoneId 为 null 时按 Asia/Shanghai 处理; 时间戳为毫秒级绝对时刻, LocalDateTime 与字符串为墙钟时间, 时区只影响解释方式
+ExcelExportResultUtil.java[CG6M]: F:Excel 导出工具类, 支持注解驱动的表头映射与模板填充, 可写出到 HTTP 响应流或本地文件 | R:code:src/main/java/com/na/common/annotation/ExcelExportColumn.java | A:- | S:Workbook 必须在 try-with-resources 内, 否则抛异常时 POI 资源要等 GC; getAnnotatedFields 沿父类链收集, 否则继承自 BaseEntity 的字段静默导不出; 导出失败且响应未提交时回写 500 + 统一 JSON
+ExcelImportResultUtil.java[CG6M]: F:Excel 导入工具类, 按 @ExcelImportColumn 的列索引映射到字段并自动类型转换, 并收集失败行的错误信息 | R:code:src/main/java/com/na/common/annotation/ExcelImportColumn.java | A:- | S:类本身即是携带数据与错误信息的结果对象, 静态 getList 仅是入口; Workbook 必须在 try-with-resources 内, 否则 POI 资源要等 GC
+FileUtil.java[CG6M]: F:文件操作工具类, 提供 Base64 与图片互转、目录与文件创建删除、classpath 资源提取与上传图片校验 | R:code:src/main/java/com/na/common/utils/CommonUtil.java | A:- | S:Base64 解码自动兼容带 data: 前缀与不带前缀两种输入; 远程图片读取固定为 5 秒连接 / 30 秒读取超时
+IDUtil.java[CG5S]: F:ID 生成工具类, 提供毫秒时间戳、UUID、随机串、订单号、纯数字与带业务前缀 ID | R:code:src/main/java/com/na/common/utils/DateTimeUtil.java | A:- | S:基于时间戳的 ID 同毫秒并发会重复; 随机段用 ThreadLocalRandom, 不适用于密钥/令牌等安全场景; 随机段上限 17 位
+IpParseUtil.java[IN6S]: F:IP 归属地解析工具类, 基于 ip2region 的 xdb 数据文件返回国家/区域/省份/城市/ISP | R:code:src/main/resources/ip2region.xdb,code:src/main/java/com/na/common/utils/AddressUtil.java | A:- | S:Searcher 由内部持有者类延迟初始化, 仅首次解析时加载 xdb; 它是进程级共享单例, 严禁 close(); region 格式固定为 国家|区域|省份|城市|ISP
+JwtUtil.java[CI7S]: F:JWT 工具类, 提供两组签名密钥派生方式不同的生成与解析 API | R:- | A:- | S:现代 API 用 UTF-8 原始字节作密钥且 HS256 要求至少 32 字节, 旧版 API 按 Base64 解码密钥; 两组 API 的生成与解析必须成对使用, 密钥派生方式混用会导致验签失败
+LocalLangUtil.java[CL6S]: F:国际化语言工具类, 通过静态 MessageSource 按当前语言环境取翻译, 支持自定义默认值 | R:code:src/main/java/com/na/common/config/WebI18nConfig.java,code:src/main/java/com/na/common/result/enums/Status.java | A:- | S:MessageSource 由构造器以 ObjectProvider 注入静态字段, 未注入或非 Spring 环境时返回默认值而不抛 NPE; get(key) 在 key 缺失时返回 key 本身
+MoneyUtil.java[KG5S]: F:金额工具类, 将人民币金额按财务票据规范转换为中文大写 | R:- | A:- | S:金额截断到 2 位小数且不四舍五入; 支持到兆级(16 位整数以内); 负数以"负"字开头并按绝对值转换
+ObjConversionUtil.java[CD6M]: F:对象转换工具类, 基于 commons-beanutils 与 Jackson 提供属性复制、非空字段复制与反射覆盖 | R:- | A:- | S:转换器已注册 BigDecimal/Long/Boolean 等包装类型, 转换失败时置 null 而不抛错, 类型不匹配会被静默吞掉; copyNonNullAndNonEmptyFields 委托反射逐字段实现, 不再经 Jackson 全量复制
+QrCodeUtil.java[CU5M]: F:二维码生成工具类(基于 ZXing), 支持生成 PNG 字节与 Base64, 可自定义颜色并嵌入 Logo | R:code:src/main/java/com/na/common/utils/FileUtil.java | A:- | S:默认纠错级别为 H(最高); 嵌 Logo 时 Logo 尺寸取二维码边长的 1/5
+RegionUtil.java[CD6S]: F:区域工具类, 从 classpath 加载 address.json 构建区域编码索引, 支持按编码查询与完整路径回溯 | R:code:src/main/resources/address.json,code:src/main/java/com/na/common/utils/dto/RegionDto.java | A:- | S:省级行政区在数据中为 2 位编码(如 "11"), getRegionByCode 对 6 位省级编码(如 "110000")自动降级取前 2 位; 编码映射在类加载时一次性构建且不可变
+RestTemplateUtil.java[IN6M]: F:远程请求工具类, 持有线程安全的共享 RestTemplate 实例并提供 GET/POST/execute 静态封装 | R:code:src/main/java/com/na/common/config/RestConfig.java | A:- | S:RestTemplate 对 4xx/5xx 响应默认抛 HttpClientErrorException 与 HttpServerErrorException, 调用方须自行捕获; 共享实例的超时由 RestConfig 同步覆盖
+SpringContextUtil.java[RG6S]: F:Spring 上下文工具类, 供非托管对象按名称或类型获取 Bean 与读取配置项 | R:- | A:- | S:以 Bean 方式注册(注册名为 springContextUtil)且调用须在容器启动完成后, 否则抛 IllegalStateException 而非 NPE
+TreeNode.java[CD5T]: F:树形节点接口, 约定 ID、父 ID、排序号、层级与子节点列表的读写契约 | R:code:src/main/java/com/na/common/utils/TreeUtil.java | A:由业务实体实现后可交给 TreeUtil 组树 | S:getLevel 与 setChildren 由 TreeUtil 在组树时回填与调用, 实体侧不应自行赋值
+TreeUtil.java[CD6S]: F:树形结构工具类, 把平铺节点列表按 parentId 组装为树并回填层级, 也支持前序展平 | R:code:src/main/java/com/na/common/utils/TreeNode.java | A:- | S:parentId 既不等于 rootParentId 又匹配不到任何节点 ID 的孤儿节点会被静默丢弃; 递归深度上限 512, 触顶抛 IllegalStateException 而非 StackOverflowError
+VideoConvertUtil.java[IP6L]: F:视频转换工具类, 基于 FFmpeg 实现 MP4 转 M3U8(HLS 切片)以及切片统计与解析 | R:code:src/main/java/com/na/common/config/FfmpegConfig.java,code:src/main/java/com/na/common/utils/CommonUtil.java | A:- | S:配置优先级为 Spring yml > JVM 系统属性 > 环境变量 > 内置默认值; Windows 默认路径写死为 D:\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.exe; 默认命令用 -codec copy 不转码
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/utils/converter/===
+LocalDateConverter.java[CD3T]: F:commons-beanutils 的 LocalDate 转换器, 把字符串按 ISO 本地日期格式解析 | R:code:src/main/java/com/na/common/utils/ObjConversionUtil.java | A:- | S:解析失败抛 IllegalArgumentException, 而不是置 null
+LocalDateTimeConverter.java[CD3T]: F:commons-beanutils 的 LocalDateTime 转换器, 把字符串按 ISO 本地日期时间格式解析 | R:code:src/main/java/com/na/common/utils/ObjConversionUtil.java | A:- | S:解析失败直接向外抛出, 未做任何包装或兑底
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/utils/crypto/===
+AESUtil.java[CS7S]: F:AES 加密解密工具, 使用 GCM 模式提供机密性与完整性认证 | R:- | A:- | S:密文格式为 Base64(IV + 密文 + Tag), 每次加密使用随机 IV, 同一明文两次加密结果不同; 长度不足的密文解密时抛 IllegalArgumentException 而非数组越界
+Base64Util.java[CG4S]: F:Base64 编解码工具, 支持标准与 URL 安全两种变体 | R:- | A:- | S:URL 安全变体用 - 和 _ 替换 + 和 / 且无换行, 与标准变体的产物互不兼容
+DigestUtil.java[CS5T]: F:通用摘要工具, 提供 SHA-1、SHA-256、SHA-512 十六进制摘要 | R:- | A:- | S:SHA-1 已不适合安全场景, 仅保留兼容用途
+HmacUtil.java[CS6S]: F:HMAC 签名工具, 支持 HmacSHA256、HmacSHA1 与 HmacMD5 | R:- | A:- | S:同一密钥与消息的签名结果恒定; 验签必须使用与签名相同的算法变体, 签名有十六进制与 Base64 两种输出格式
+MD5Util.java[CS3T]: F:MD5 哈希工具, 提供 32 位与 16 位中段摘要 | R:- | A:- | S:不适用于密码存储, 仅用于校验码与数字指纹
+SM2Util.java[CS7M]: F:SM2 国密非对称加解密与签名工具, 基于 sm2p256v1 曲线 | R:- | A:- | S:256 位密钥强度等同 RSA 3072 位; 内置 KeyPair 类, 公私钥均以 Base64 字符串表示; 加密用公钥解密用私钥, 签名用私钥验签用公钥
+SM3Util.java[CS6M]: F:SM3 国密密码哈希工具, 提供基础哈希、加盐哈希与 HMAC-SM3 | R:- | A:- | S:摘要长度 256 位, 强度等同 SHA-256; 加盐哈希的盐值需调用方自行保存; hmacSm3 按 RFC 2104 压缩超长密钥, 与标准实现互通
+SM4Util.java[CS6S]: F:SM4 国密对称加解密工具, 128 位分组与 128 位密钥 | R:- | A:- | S:密钥固定 128 位, 与 AES 等可变长度密钥的算法不同; 长度不足的密文解密时抛 IllegalArgumentException 而非数组越界
+CryptoSupport.java[CG3T]: F:crypto 包内部的公共实现: 十六进制转换、恒定时间比较与 BouncyCastle Provider 幂等注册 | R:code:src/main/java/com/na/common/utils/crypto/MD5Util.java,code:src/main/java/com/na/common/utils/crypto/SM3Util.java | A:- | S:包私有不对外暴露; Provider 先查再注册, 避免重复 addProvider
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/utils/dto/===
+RegionDto.java[CD5T]: F:区域数据节点模型, 含编码、名称、子节点与父编码 | R:code:src/main/java/com/na/common/utils/RegionUtil.java,code:src/main/resources/address.json | A:- | S:parentCode 不来自数据文件, 由 RegionUtil 组树时反向挂载, 用于逆向回溯路径
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/xss/===
+AutoXssConfig.java[FS5T]: F:XSS 配置属性, 绑定 na.xss.* 并声明启用开关与不拦截的排除路径 | R:code:src/main/java/com/na/common/xss/XssFilter.java,code:src/main/java/com/na/common/xss/XssStringJsonDeserializer.java | A:- | S:作为 @ConfigurationProperties 注册, 开关字段 enabled 与 XssFilterConfig / JacksonConfig 读同一个键 na.xss.enabled; 功能关闭时仍注册
+XssEscapeOnly.java[FS5T]: F:标注字段在 JSON 反序列化时只做 HTML 转义而不删除危险内容 | R:code:src/main/java/com/na/common/xss/XssStringJsonDeserializer.java | A:- | S:用于富文本字段; 不加此注解时危险标签会被正则删除, 正文可能被清空
+XssFilter.java[ES6T]: F:XSS 防护过滤器, 把请求包装为 XssHttpServletRequestWrapper 并对参数做 HTML 转义 | R:code:src/main/java/com/na/common/xss/XssHttpServletRequestWrapper.java,code:src/main/java/com/na/common/xss/AutoXssConfig.java,code:src/main/java/com/na/common/utils/CommonUtil.java | A:- | S:仅作用于非 JSON 请求数据; JSON 请求体需由 XssStringJsonDeserializer 另行处理
+XssFilterConfig.java[ES4T]: F:在 na.xss.enabled=true 时把 XssFilter 注册为拦截 /* 的 Servlet Filter, order=20 | R:code:src/main/java/com/na/common/xss/XssFilter.java,code:src/main/java/com/na/common/xss/AutoXssConfig.java | A:- | S:order=20 晚于 CSRF 过滤器的 order=10, 两者的执行先后完全由该值决定
+XssHttpServletRequestWrapper.java[ES6T]: F:请求包装类, 对 Header、QueryString 与表单参数值做 HTML 转义 | R:code:src/main/java/com/na/common/xss/XssFilter.java | A:- | S:getParameterValues 会就地修改底层数组元素; JSON 请求体不经过本包装类
+XssStringJsonDeserializer.java[MS6S]: F:JSON 字符串字段的 XSS 防护反序列化器, 默认移除全部 HTML 标签, @XssEscapeOnly 时改为 HTML 转义 | R:code:src/main/java/com/na/common/xss/XssEscapeOnly.java,code:src/main/java/com/na/common/xss/AutoXssConfig.java,code:src/main/java/com/na/common/config/JacksonConfig.java | A:- | S:默认模式靠整标签移除而非事件名黑名单, 无引号写法与未闭合标签一并覆盖, 不存在绕过; 只对 String 字段生效; 规则由 JacksonConfig 通过静态 setConfig 注入
+
+===D:/dev/PG/na-tools/na-common/src/main/resources/===
+address.json[CD6T]: F:中国行政区划静态参考数据, 省/市/区/街道多级嵌套树, 节点含 code/name/children | R:code:src/main/java/com/na/common/utils/RegionUtil.java,code:src/main/java/com/na/common/utils/dto/RegionDto.java | A:- | S:省级节点为 2 位编码(如 "11")而非 6 位; pom.xml 的 nonFilteredFileExtensions 已排除 json 以免被 Maven 资源过滤损坏
+ip2region.xdb[CD6L]: F:ip2region 离线 IP 归属地查询二进制数据库, 供 IpParseUtil 解析国家/区域/省份/城市/ISP | R:code:src/main/java/com/na/common/utils/IpParseUtil.java | A:- | S:第三方二进制数据, 不可手工编辑; 升级需整体替换并确认 IpParseUtil 的 Searcher 版本适配
+
+===D:/dev/PG/na-tools/na-common/src/main/resources/com/na/log/config/===
+log4j2.md[SO5T]: F:log4j2 接入说明, 给出放置配置、设置 logging.config 与调整 pom 依赖的步骤 | R:code:src/main/resources/com/na/log/config/log4j2.xml | A:- | S:接入需排除 spring-boot-starter-logging 并引入 spring-boot-starter-log4j2, 否则与默认 logback 冲突
+log4j2.xml[OO6S]: F:log4j2 日志配置, 定义控制台与文件输出、按级别分文件滚动与保留策略 | R:code:src/main/resources/com/na/log/config/log4j2.md | A:- | S:日志根路径为相对目录 logs; monitorInterval=60 秒热加载; DEBUG/INFO/WARN/ERROR 四级各自独立文件与大小上限, 保留 30 天
+na-defaults.xml[OO7M]: F:na-common 提供的 Logback 默认配置片段, 定义控制台与多路文件 appender、异步策略与分 Profile 差异 | R:code:src/main/resources/com/na/log/config/log4j2.md,code:src/main/resources/com/na/log/config/log4j2.xml | A:- | S:是 <included> 片段而非根配置, 必须由业务项目的 logback-spring.xml 通过 <include> 引入; 输出目录为 ${logging.path}/${spring.application.name}/
+
+===D:/dev/PG/na-tools/na-common/src/main/resources/static/===
+401.html[CU2T]: F:401 未登录静态错误页, 由 ErrorPageConfig 注册到内嵌容器 | R:code:src/main/java/com/na/common/config/ErrorPageConfig.java | A:- | S:四个错误页除标题与提示文案外结构一致, 改样式需同步四处
+403.html[CU2T]: F:403 无权限静态错误页, 由 ErrorPageConfig 注册到内嵌容器 | R:code:src/main/java/com/na/common/config/ErrorPageConfig.java | A:- | S:四个错误页除标题与提示文案外结构一致, 改样式需同步四处
+404.html[CU2T]: F:404 页面不存在静态错误页, 由 ErrorPageConfig 注册到内嵌容器 | R:code:src/main/java/com/na/common/config/ErrorPageConfig.java | A:- | S:四个错误页除标题与提示文案外结构一致, 改样式需同步四处
+500.html[CU2T]: F:500 服务器错误静态错误页, 由 ErrorPageConfig 注册到内嵌容器 | R:code:src/main/java/com/na/common/config/ErrorPageConfig.java | A:- | S:四个错误页除标题与提示文案外结构一致, 改样式需同步四处
+
+===D:/dev/PG/na-tools/na-common/src/main/resources/static/i18n/===
+messages.properties[CL3T]: F:i18n 默认兑底资源, 内容为中文 | R:code:src/main/resources/static/i18n/messages_zh_CN.properties,code:src/main/java/com/na/common/config/WebI18nConfig.java | A:- | S:与 messages_zh_CN.properties 内容相同, 是未配置语言的最终兑底
+messages_en_US.properties[CL3T]: F:美式英语 i18n 资源 | R:code:src/main/java/com/na/common/config/WebI18nConfig.java | A:- | S:仅有 status.* 四个 key
+messages_ja_JP.properties[CL3T]: F:日语 i18n 资源 | R:code:src/main/java/com/na/common/config/WebI18nConfig.java | A:- | S:仅有 status.* 四个 key
+messages_zh_CN.properties[CL3T]: F:简体中文 i18n 资源 | R:code:src/main/resources/static/i18n/messages.properties | A:- | S:与 messages.properties 内容相同
+
+===D:/dev/PG/na-tools/na-common/src/main/java/com/na/common/autoconfigure/===
+NaCommonAutoConfiguration.java[EG9L]: F:na-common 的 Spring Boot 自动装配入口: 注册时机控制、条件求值、让位策略与全部受管类的注册清单 | R:code:src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports,code:src/main/java/com/na/common/autoconfigure/NaConditions.java | A:- | S:注册必须走 BeanDefinitionRegistryPostProcessor 而不能用 @Bean+@ConditionalOnMissingBean(本类含 @Configuration 元注解, 会被宿主组件扫描提前处理而使让位失效); 被注册的类不得带 @Component/@Configuration; messageSource 与 redisTemplate 用 REPLACE_BOOT_DEFAULT 只替换来自 Spring Boot 自动装配的定义, 宿主自带的一律保留
+NaConditions.java[EG8S]: F:条件求值垫片, 用公开 API 复刻 Spring 包私有的 ConditionEvaluator.shouldSkip 语义 | R:code:src/main/java/com/na/common/autoconfigure/NaCommonAutoConfiguration.java | A:- | S:ConditionEvaluator 与 Boot 的 OnPropertyCondition/OnExpressionCondition 都是包私有的(字节码 flags 只有 ACC_SUPER), 条件类只能从 @Conditional.value() 反射取出而不能硬编码类名; 求值发生在 BeanDefinitionRegistryPostProcessor 阶段, 此时宿主 Bean 定义已全部就位
+
+===D:/dev/PG/na-tools/na-common/src/main/resources/META-INF/spring/===
+org.springframework.boot.autoconfigure.AutoConfiguration.imports[FC5T]: F:Spring Boot 自动装配发现文件, 声明 NaCommonAutoConfiguration 为自动装配入口 | R:code:src/main/java/com/na/common/autoconfigure/NaCommonAutoConfiguration.java | A:- | S:必须保持 LF 行尾(仓库根 .gitattributes 强制 eol=lf), 否则整棵树会被 AOCI 标记 stale
+
+===D:/dev/PG/na-tools/na-common/src/test/java/com/na/common/demo/===
+ExcelDemo.java[TG3T]: F:Excel 导入导出的可运行示例, 含导出到本地文件与上传文件解析两个用例 | R:code:src/main/java/com/na/common/utils/ExcelExportResultUtil.java,code:src/main/java/com/na/common/utils/ExcelImportResultUtil.java | A:- | S:位于测试源集不进 jar; 导出用例会在工作目录生成 用户导出.xlsx
+
+===D:/dev/PG/na-tools/na-common/src/test/java/smoke/===
+NaCommonSmoke.java[TG6M]: F:na-common 自动装配冒烟夹具: 以 com.na 之外的启动类验证各受管类的注册、让位与 Bean 归属 | R:code:src/test/java/smoke/enablena/EnableNaHost.java,code:src/test/java/smoke/nouser/NoUserServiceHost.java,code:src/main/java/com/na/common/autoconfigure/NaCommonAutoConfiguration.java | A:java -cp target/test-classes;target/classes;第三方jar smoke.NaCommonSmoke | S:断言 Bean 由本模块提供而非仅存在, 否则发现不了 Spring Boot 默认实现顶掉本模块实现的情形; 本机仓库缺 surefire 的 JUnit Platform 提供者, 离线跑不了 mvn test
+
+===D:/dev/PG/na-tools/na-common/src/test/java/smoke/enablena/===
+EnableNaHost.java[TG2T]: F:冒烟用宿主启动类, 标注 @EnableNA 以验证其与自动装配共存不冲突 | R:code:src/main/java/com/na/common/annotation/EnableNA.java | A:- | S:放在独立子包, 避免与另一个 @SpringBootApplication 互相组件扫描
+
+===D:/dev/PG/na-tools/na-common/src/test/java/smoke/nouser/===
+NoUserServiceHost.java[TG2T]: F:冒烟用宿主启动类, 不提供 INoRepeatSubmitUserService 以验证只开 IP 维度防重时能正常启动 | R:code:src/main/java/com/na/common/aop/service/INoRepeatSubmitUserService.java | A:- | S:放在独立子包, 避免扫到另一个宿主的 SPI 桩而使验证失去意义

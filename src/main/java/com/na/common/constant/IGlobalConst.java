@@ -57,6 +57,19 @@ public interface IGlobalConst {
 
         Long EXPIRATION_MILLISECONDS = 1000L * 60 * 60 * 24 * 7;
 
+        /**
+         * 历史遗留的"默认密钥"。
+         *
+         * <p><b>它不是一个密钥</b>：本常量随公开库一起发布，任何人都能读到，
+         * 因此任何依赖它的签名/加密都不具备机密性 —— 持有该值的攻击者可以伪造令牌或解开密文。
+         *
+         * <p>当前 {@code na-auth} 的 {@code AutoAuthConfig#getSigningKey()} 在宿主未配置
+         * {@code na.auth.signingKey} 时回退到本常量，即把 JWT 签名密钥变成了公开已知值。
+         * 生产部署必须显式配置自己的密钥（从配置中心或环境变量注入）。
+         *
+         * @deprecated 仅为兼容既有调用保留，不要在新代码中使用；请改为从配置读取。
+         */
+        @Deprecated
         String STRING_KEY = "8a7f26bc-108c-41cb-8adb-1d5ed7b9a998";
 
         interface SYS_TYPE {

@@ -3,18 +3,14 @@ package com.na.common.utils;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -27,10 +23,11 @@ import java.util.function.Supplier;
  * 支持分布式锁、缓存过期管理和批量操作
  */
 @Slf4j
-@Component
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redis.enable:false}'.equals('true')")
 public class CacheTemplateUtil {
+
+    /** tryLock/releaseLock(单参数版) 写入的锁值占位符 */
+    private static final String LOCKED_VALUE = "locked";
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final ValueOperations<String, Object> valueRedis;
@@ -316,20 +313,28 @@ public class CacheTemplateUtil {
     }
 
     /**
-     * 获取指定类型的缓存集合
-     * @param key 缓存键
-     * @param clazz 元素类型Class
-     * @param <T> 原始缓存类型
-     * @return Set，找不到或解析失败返回null
+     * 获取指定元素类型的缓存集合
      *
+     * @param key   缓存键
+     * @param clazz 元素类型 Class
+     * @param <T>   元素类型
+     * @return Set，找不到或解析失败返回 null；元素类型为 clazz
      */
     public <T> Set<T> getCacheSet(String key, Class<T> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("getCacheSet: clazz 不能为空");
+        }
         String cache = getCache(key);
         if (cache == null) {
             return null;
         }
         try {
-            return JSONObject.parseObject(cache, new TypeReference<Set<T>>() {});
+            // 按元素类型逐个解析, 让 clazz 真正生效。
+            // 原实现是 JSONObject.parseObject(cache, new TypeReference<Set<T>>() {}) ——
+            // 匿名类的类型参数是编译期字面量, 带不上方法上的 T, 因此 clazz 形参被完全忽略,
+            // 调用方拿到的是 JSONObject 而非目标类型, 且不会有任何报错。
+            // 用 LinkedHashSet 保留 JSON 数组中的顺序。
+            return new LinkedHashSet<>(JSON.parseArray(cache, clazz));
         } catch (Exception e) {
             log.error("JSON parse Set error for key {}: {}", key, e.getMessage());
             return null;
@@ -620,26 +625,20 @@ public class CacheTemplateUtil {
             log.warn("tryLock skipped: lockKey blank or timeout invalid");
             return false;
         }
-        Boolean success = valueRedis.setIfAbsent(lockKey, "locked", timeout, unit);
+        Boolean success = valueRedis.setIfAbsent(lockKey, LOCKED_VALUE, timeout, unit);
         return Boolean.TRUE.equals(success);
     }
 
     /**
      * 释放锁，只有当前锁值为"locked"时才删除
+     * <p>委托给 Lua 原子版本: get→比对→delete 三步非原子, 并发下会误删他人刚获取的锁
      * @param lockKey 锁键
      * @return 是否成功释放
      *
      */
     public boolean releaseLock(String lockKey) {
-        if (StringUtils.isBlank(lockKey)) {
-            log.warn("releaseLock skipped: lockKey is blank");
-            return false;
-        }
-        if (Objects.equals(valueRedis.get(lockKey), "locked")) {
-            redisTemplate.delete(lockKey);
-            return true;
-        }
-        return false;
+        // 与 tryLock(lockKey, timeout, unit) 写入的值保持一致
+        return releaseLock(lockKey, LOCKED_VALUE);
     }
 
     /**
@@ -812,9 +811,41 @@ public class CacheTemplateUtil {
      */
     public Long incr(String key, long delta) {
         if (delta < 0) {
-            throw new RuntimeException("递增因子必须大于0");
+            // 参数非法用 IllegalArgumentException, 便于调用方按类型捕获
+            throw new IllegalArgumentException("递增因子必须大于0");
         }
         return redisTemplate.opsForValue().increment(key, delta);
+    }
+
+    /**
+     * 原子自增，并在键首次创建时设置过期时间
+     * <p>INCR 与设置 TTL 放在同一个 Lua 脚本内完成，用途是"按时间窗口计数"：
+     * 既保证并发安全（读-改-写三步非原子时，两个并发请求会读到同一计数值），
+     * 又保证键不会因进程中途中断而永久残留（先 INCR 再单独 EXPIRE 存在这个窗口）。
+     * <p>计数未超限时过期时间保持不变，即固定窗口而非滑动窗口。
+     *
+     * @param key          键
+     * @param expireMillis 首次创建时的过期时间(毫秒)；&lt;=0 时不设置过期
+     * @return 自增后的值；脚本执行失败时返回 null
+     */
+    public Long incrWithWindow(String key, long expireMillis) {
+        if (StringUtils.isBlank(key)) {
+            log.warn("incrWithWindow skipped: key is blank");
+            return null;
+        }
+        // tonumber 兼容参数被序化器加上引号的情形
+        String luaScript =
+                "local c = redis.call('incr', KEYS[1]) " +
+                        "local ttl = tonumber(ARGV[1]) " +
+                        "if c == 1 and ttl and ttl > 0 then redis.call('pexpire', KEYS[1], ttl) end " +
+                        "return c";
+        RedisScript<Long> redisScript = RedisScript.of(luaScript, Long.class);
+        try {
+            return redisTemplate.execute(redisScript, Collections.singletonList(key), expireMillis);
+        } catch (Exception e) {
+            log.error("incrWithWindow 执行失败, key={}", key, e);
+            return null;
+        }
     }
 
     /**
@@ -826,7 +857,7 @@ public class CacheTemplateUtil {
      */
     public Long decr(String key, long delta) {
         if (delta < 0) {
-            throw new RuntimeException("递减因子必须大于0");
+            throw new IllegalArgumentException("递减因子必须大于0");
         }
         return redisTemplate.opsForValue().increment(key, -delta);
     }

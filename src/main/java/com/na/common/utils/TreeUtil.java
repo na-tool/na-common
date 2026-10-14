@@ -27,6 +27,13 @@ import java.util.stream.Collectors;
  */
 public final class TreeUtil {
 
+    /**
+     * 递归深度上限。
+     * <p>正常业务树远达不到该深度; 触顶说明数据存在自引用或环,
+     * 此时抛出可定位的异常, 而不是让 JVM 抛 StackOverflowError。
+     */
+    private static final int MAX_DEPTH = 512;
+
     /** 纯静态工具类, 禁止实例化 */
     private TreeUtil() {
     }
@@ -65,7 +72,7 @@ public final class TreeUtil {
         List<T> rootList = childrenByParent.getOrDefault(rootParentId, new ArrayList<>());
         for (T root : rootList) {
             root.setLevel(1);
-            attachChildren(root, childrenByParent);
+            attachChildren(root, childrenByParent, 1);
         }
         return rootList;
     }
@@ -75,8 +82,16 @@ public final class TreeUtil {
      *
      * @param node             当前节点(层级已回填)
      * @param childrenByParent parentId -> 子节点列表 的分组索引
+     * @param depth            当前深度(根为 1)
+     * @throws IllegalStateException 深度超过 {@link #MAX_DEPTH}, 说明数据存在自引用或环
      */
-    private static <T extends TreeNode<ID>, ID> void attachChildren(T node, Map<ID, List<T>> childrenByParent) {
+    private static <T extends TreeNode<ID>, ID> void attachChildren(T node, Map<ID, List<T>> childrenByParent, int depth) {
+        if (depth > MAX_DEPTH) {
+            // 自引用(如节点 A 的 parentId 恰为自身且等于 rootParentId)会让递归永不收敛,
+            // 原来是直接 StackOverflowError, 这里换成可定位的数据异常
+            throw new IllegalStateException(
+                    "组树层级超过上限 " + MAX_DEPTH + ", 节点 ID 可能存在自引用或环: " + node.getId());
+        }
         List<T> children = childrenByParent.get(node.getId());
         if (children == null) {
             // 叶子节点: 置为空列表, 保证调用方拿到的 children 永远非 null
@@ -89,7 +104,7 @@ public final class TreeUtil {
         }
         node.setChildren(children);
         for (T child : children) {
-            attachChildren(child, childrenByParent);
+            attachChildren(child, childrenByParent, depth + 1);
         }
     }
 
@@ -108,16 +123,25 @@ public final class TreeUtil {
             return result;
         }
         for (T node : tree) {
-            flattenNode(node, result);
+            flattenNode(node, result, 1);
         }
         return result;
     }
 
     /**
      * 递归展平单个节点及其子树
+     *
+     * @param node   当前节点
+     * @param result 结果列表
+     * @param depth  当前深度(根为 1)
+     * @throws IllegalStateException 深度超过 {@link #MAX_DEPTH}, 说明 children 引用成环
      */
     @SuppressWarnings("unchecked")
-    private static <T extends TreeNode<?>> void flattenNode(T node, List<T> result) {
+    private static <T extends TreeNode<?>> void flattenNode(T node, List<T> result, int depth) {
+        if (depth > MAX_DEPTH) {
+            throw new IllegalStateException(
+                    "展平层级超过上限 " + MAX_DEPTH + ", children 引用可能成环: " + node.getId());
+        }
         // 先加父节点, 保证前序顺序
         result.add(node);
 
@@ -125,7 +149,7 @@ public final class TreeUtil {
         if (children != null && !children.isEmpty()) {
             for (TreeNode<?> child : children) {
                 // 实体实现中 children 与节点本身同类型, 此处泛型通配导致必须强转
-                flattenNode((T) child, result);
+                flattenNode((T) child, result, depth + 1);
             }
         }
     }

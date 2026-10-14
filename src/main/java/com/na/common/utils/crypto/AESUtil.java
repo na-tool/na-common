@@ -116,8 +116,13 @@ public final class AESUtil {
      * @return 明文
      */
     public static String decrypt(String cipherText, String key) {
+        byte[] decoded = DECODER.decode(cipherText);
+        // 长度不足时先行拒绝: 否则 new byte[负数] 抛 NegativeArraySizeException,
+        // 被下面的 catch 包成"AES解密失败", 掩盖了真正原因(密文格式非法)
+        if (decoded.length <= IV_LENGTH_BYTE + TAG_LENGTH_BIT / 8) {
+            throw new IllegalArgumentException("AES密文格式非法: 长度不足以容纳 IV 与认证标签");
+        }
         try {
-            byte[] decoded = DECODER.decode(cipherText);
             byte[] keyBytes = DECODER.decode(key);
 
             // 提取 IV(前 12 字节)和密文(剩余)

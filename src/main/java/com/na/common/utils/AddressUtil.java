@@ -3,7 +3,6 @@ package com.na.common.utils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -19,7 +18,6 @@ import java.util.function.Function;
  * 所有方法均为静态调用。注意：代理头(如 X-Forwarded-For)可被客户端伪造，
  * 依赖其做安全控制时，需确保请求经过可信代理并覆盖了伪造字段。
  */
-@Component
 @Slf4j
 public class AddressUtil {
 
@@ -187,11 +185,4 @@ public class AddressUtil {
         }
     }
 
-    /**
-     * 主方法用于测试本机 MAC 地址获取
-     * @param args 命令行参数
-     */
-    public static void main(String[] args) {
-        System.out.println(getMacAddress());
-    }
 }

@@ -308,7 +308,7 @@ public final class VideoConvertUtil {
             return customPath;
         }
         // 4. 操作系统默认: Windows 默认安装路径; Linux/Mac 假设已加入 PATH
-        return isWindows() ? WINDOWS_FFMPEG_PATH : "ffmpeg";
+        return CommonUtil.isWindows() ? WINDOWS_FFMPEG_PATH : "ffmpeg";
     }
 
     /**
@@ -365,14 +365,6 @@ public final class VideoConvertUtil {
         return HLS_SEGMENT_TIME_SECONDS;
     }
 
-    /**
-     * 判断当前操作系统是否为 Windows
-     *
-     * @return true=Windows 系统
-     */
-    private static boolean isWindows() {
-        return System.getProperty("os.name", "").toLowerCase().contains("win");
-    }
 
     /**
      * 将命令字符串切分为参数列表(支持双引号包裹含空格的路径)

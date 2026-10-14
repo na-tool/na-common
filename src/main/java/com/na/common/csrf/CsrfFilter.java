@@ -1,6 +1,7 @@
 package com.na.common.csrf;
 
-import com.na.common.exceptions.BusinessException;
+import com.alibaba.fastjson2.JSON;
+import com.na.common.result.Result;
 import com.na.common.result.enums.Status;
 import com.na.common.utils.CommonUtil;
 import jakarta.servlet.*;
@@ -8,11 +9,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -22,10 +25,13 @@ import java.util.List;
  * <ol>
  *   <li>通过 Referer 请求头判断请求来源是否为受信任域名</li>
  *   <li>若来源不可信, 判断当前请求路径是否在白名单中</li>
- *   <li>两者都不满足, 视为潜在 CSRF 攻击, 抛出 {@link BusinessException} 拦截</li>
+ *   <li>两者都不满足, 视为潜在 CSRF 攻击, 拒绝请求</li>
  * </ol>
  * <p>
  * 由 {@link CsrfFilterConfig} 在 {@code na.csrf.enabled=true} 时注册
+ * <p>
+ * <b>拒绝方式</b>: 过滤器位于 DispatcherServlet 之前, {@code @RestControllerAdvice}
+ * 覆盖不到这条链路, 因此本类直接写出 {@link Result} JSON, 不抛业务异常。
  */
 @Slf4j
 public class CsrfFilter implements Filter {
@@ -55,17 +61,24 @@ public class CsrfFilter implements Filter {
                 // 放行空 Referer(如浏览器地址栏直接访问)
                 chain.doFilter(request, response);
                 return;
-            } else {
-                log.warn("[CSRF 拦截] Referer 为空, 且未允许空 Referer 请求");
-                throw new BusinessException(Status.AUTHORIZATION_EXPIRED, null);
             }
+            reject(res, "Referer 为空, 且未允许空 Referer 请求");
+            return;
         }
 
-        // 提取 Referer 中的 host:port
-        String refererHost = extractHostAndPort(req, referer);
+        // 提取 Referer 中的 host:port; Referer 非法时按拒绝处理
+        String refererHost = extractHostAndPort(referer);
+        if (refererHost == null) {
+            reject(res, "无效 Referer: " + referer);
+            return;
+        }
 
         // 提取当前请求地址中的 host:port
-        String requestHost = extractHostAndPort(req, null);
+        String requestHost = extractHostAndPort(req.getRequestURL().toString());
+        if (requestHost == null) {
+            reject(res, "无效请求地址: " + req.getRequestURL());
+            return;
+        }
 
         // Referer 来源与当前请求来源不同, 可能是跨站访问
         if (!requestHost.equalsIgnoreCase(refererHost)) {
@@ -84,9 +97,8 @@ public class CsrfFilter implements Filter {
 
                 // 判断路径是否在 CSRF 路径白名单中
                 if (!CommonUtil.isExcluded(config.getCsrfWhitePaths(), cleanPath)) {
-                    log.warn("[CSRF 拦截] Referer 不可信: {}", referer);
-                    log.warn("[CSRF 拦截] 请求地址: {}", req.getRequestURL());
-                    throw new BusinessException(Status.AUTHORIZATION_EXPIRED, null);
+                    reject(res, "Referer 不可信: " + referer + ", 请求地址: " + req.getRequestURL());
+                    return;
                 }
             }
         }
@@ -96,23 +108,35 @@ public class CsrfFilter implements Filter {
     }
 
     /**
+     * 拒绝请求: 直接向响应写出统一的 {@link Result} JSON
+     * <p>
+     * 状态码沿用业务异常约定(HTTP 200 + 业务码区分), 与走 {@code @RestControllerAdvice}
+     * 时 {@code BusinessException(Status.AUTHORIZATION_EXPIRED, null)} 的结果一致。
+     *
+     * @param response HTTP 响应
+     * @param reason   拒绝原因, 仅记录到服务端日志, 不回传给客户端
+     */
+    private void reject(HttpServletResponse response, String reason) throws IOException {
+        log.warn("[CSRF 拦截] {}", reason);
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(JSON.toJSONString(Result.error(Status.AUTHORIZATION_EXPIRED)));
+    }
+
+    /**
      * 提取 URL 中的 host[:port]
      *
-     * @param request 当前请求对象
-     * @param referer 如果非空, 从 Referer URL 提取; 为空则从 request 自身 URL 提取
-     * @return host 或 host:port 字符串
-     * @throws IOException URL 解析失败时抛出 BusinessException
+     * @param url 完整 URL 字符串
+     * @return host 或 host:port 字符串; URL 非法时返回 null(由调用方决定拒绝策略)
      */
-    private String extractHostAndPort(HttpServletRequest request, String referer) throws IOException {
+    private String extractHostAndPort(String url) {
         try {
-            URL url = StringUtils.isNotBlank(referer)
-                    ? new URL(referer)
-                    : new URL(request.getRequestURL().toString());
-
-            return (url.getPort() == -1) ? url.getHost() : url.getHost() + ":" + url.getPort();
+            URL parsed = new URL(url);
+            return (parsed.getPort() == -1) ? parsed.getHost() : parsed.getHost() + ":" + parsed.getPort();
         } catch (MalformedURLException e) {
-            log.warn("[CSRF] 无效 Referer: {}", referer);
-            throw new BusinessException(Status.AUTHORIZATION_EXPIRED, null);
+            log.warn("[CSRF] 无效 URL: {}", url);
+            return null;
         }
     }
 

@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * FFmpeg 配置类: 读取 application.yml 中的 {@code na.ffmpeg.*} 配置并注入 {@link VideoConvertUtil} 静态工具类
@@ -28,7 +27,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Data
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "na.ffmpeg.enable", havingValue = "true", matchIfMissing = true)
 @ConfigurationProperties(prefix = "na.ffmpeg")
 public class FfmpegConfig {

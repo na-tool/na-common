@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -27,6 +28,9 @@ import java.util.regex.Pattern;
 public class CommonUtil {
 
     /** 简单 IPv4 格式: 四段数字, 如 192.168.1.1 (不校验每段是否在 0~255 范围内) */
+    /** 路径白名单条目 -> 预编译正则 的缓存(白名单来自配置, 条目有限且稳定) */
+    private static final Map<String, Pattern> PATH_PATTERN_CACHE = new ConcurrentHashMap<>();
+
     private static final Pattern IPV4_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
 
     /** IP 段匹配模式: 每段可为数字、通配符(*)或单段范围(-), 如 192.168.1.* 、192.168.1.10-20 */
@@ -104,16 +108,31 @@ public class CommonUtil {
             return false;
         }
         for (String uri : requestUris) {
-            // 先转义正则特殊字符(如路径中的 . )，避免被当作正则元字符;
-            // 再将通配符 /* 转为 /[^/]*，实现单段路径通配
-            String regex = uri.replace("\\", "\\\\").replace(".", "\\.").replace("/*", "/[^/]*");
-
-            if (Pattern.matches(regex, requestUri)) {
+            if (StringUtils.isBlank(uri)) {
+                continue;
+            }
+            // 正则预编译并缓存: 原实现每次调用都重新编译,
+            // 而白名单在请求链路上是会被反复比对的固定配置
+            Pattern pattern = PATH_PATTERN_CACHE.computeIfAbsent(uri, CommonUtil::compilePathPattern);
+            if (pattern.matcher(requestUri).matches()) {
                 log.debug("[XSS] 命中路径白名单: {}", requestUri);
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * 把白名单条目编译为路径正则
+     * <p>先转义正则特殊字符(如路径中的 {@code .})，避免被当作正则元字符;
+     * 再将通配符 {@code /*} 转为 {@code /[^/]*}，实现单段路径通配
+     *
+     * @param uri 白名单条目
+     * @return 编译后的正则
+     */
+    private static Pattern compilePathPattern(String uri) {
+        String regex = uri.replace("\\", "\\\\").replace(".", "\\.").replace("/*", "/[^/]*");
+        return Pattern.compile(regex);
     }
 
     /**
@@ -277,10 +296,16 @@ public class CommonUtil {
         if (ips.length != 2 || !isIp(ips[0]) || !isIp(ips[1]) || !isIp(ip)) {
             return false;
         }
-        long start = ipToLong(ips[0]);
-        long end = ipToLong(ips[1]);
-        long target = ipToLong(ip);
-        return target >= start && target <= end;
+        try {
+            long start = ipToLong(ips[0]);
+            long end = ipToLong(ips[1]);
+            long target = ipToLong(ip);
+            return target >= start && target <= end;
+        } catch (NumberFormatException e) {
+            // isIp 只校验"四段数字"的形状, 段值可能超出 int 范围导致解析失败;
+            // 与本类约定一致: 非法输入返回不匹配, 不向调用方抛异常
+            return false;
+        }
     }
 
     /**

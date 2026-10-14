@@ -21,9 +21,6 @@ public final class MD5Util {
     private MD5Util() {
     }
 
-    /** MD5 摘要字节数(128 位 = 16 字节) */
-    private static final int MD5_LENGTH = 16;
-
     /**
      * 计算 MD5 哈希(32 位小写十六进制)
      *
@@ -37,7 +34,7 @@ public final class MD5Util {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            return toHex(digest);
+            return CryptoSupport.toHex(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5算法不可用", e);
         }
@@ -54,19 +51,5 @@ public final class MD5Util {
     public static String md5Hex16(String input) {
         String full = md5(input);
         return full.isEmpty() ? "" : full.substring(8, 24);
-    }
-
-    /**
-     * 字节数组转小写十六进制字符串
-     *
-     * @param bytes 字节数组
-     * @return 小写十六进制字符串
-     */
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b & 0xff));
-        }
-        return sb.toString();
     }
 }

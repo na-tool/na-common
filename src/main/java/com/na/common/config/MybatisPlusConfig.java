@@ -7,8 +7,6 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * MyBatis-Plus 配置类: 注册拦截器链(分页 + 乐观锁)并开启声明式事务
@@ -32,8 +30,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  *     overflow: false             # 页码溢出是否自动回到首页附近, 默认 false(溢出返回空)
  * }</pre>
  */
-@EnableTransactionManagement
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = {"na.mybatis.enable"},
         havingValue = "true",

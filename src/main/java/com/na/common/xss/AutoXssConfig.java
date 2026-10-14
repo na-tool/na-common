@@ -2,7 +2,6 @@ package com.na.common.xss;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,9 +20,15 @@ import java.util.List;
  * }</pre>
  */
 @Data
-@Component
 @ConfigurationProperties(prefix = "na.xss")
 public class AutoXssConfig {
+
+    /**
+     * 是否开启 XSS 过滤器(默认关闭)
+     * <p>声明为字段后, 开关、属性绑定与 IDE 配置提示三者归一;
+     * {@code XssFilterConfig} 的 {@code @ConditionalOnProperty} 读的是同一个键
+     */
+    private Boolean enabled = false;
 
     /**
      * XSS 过滤器排除路径（不拦截）

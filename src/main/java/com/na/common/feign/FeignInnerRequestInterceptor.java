@@ -5,7 +5,6 @@ import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
-import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
@@ -22,7 +21,6 @@ import java.lang.reflect.Method;
  * 执行顺序: {@link Ordered#HIGHEST_PRECEDENCE}, 确保在其他拦截器之前注入请求头
  */
 @Slf4j
-@Component
 public class FeignInnerRequestInterceptor implements RequestInterceptor, Ordered {
 
     /**

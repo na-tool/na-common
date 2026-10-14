@@ -5,7 +5,6 @@ import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.ErrorPage;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 
 import java.util.Collections;
@@ -39,7 +38,6 @@ import java.util.Map;
  *     enable: false
  * }</pre>
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = {"na.errorPage.enable"},
         havingValue = "true",

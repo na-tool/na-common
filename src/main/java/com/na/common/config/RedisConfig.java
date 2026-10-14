@@ -3,7 +3,6 @@ package com.na.common.config;
 import com.alibaba.fastjson2.support.spring6.data.redis.FastJsonRedisSerializer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -44,7 +43,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * {@code JSONObject} 而非原对象, 业务方取值后需自行 {@code JSON.toJavaObject(obj, TargetClass.class)}
  * 转回原类型; 如需自动还原类型, 建议改用 {@code Jackson2JsonRedisSerializer} 并启用默认类型注入。
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redis.enable:false}'.equals('true')")
 public class RedisConfig {
 

@@ -3,7 +3,6 @@ package com.na.common.xss;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * XSS 防护过滤器配置类（Servlet Filter 方式）
@@ -11,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
  * 用于注册自定义的 XssFilter，它会对所有进入的 HTTP 请求进行包装，
  * 拦截并清理常见的 XSS 攻击代码，适用于表单提交、URL 参数、Header 等非 JSON 数据。
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = "na.xss.enabled",
         havingValue = "true",

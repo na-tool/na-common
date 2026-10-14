@@ -1,6 +1,7 @@
 package com.na.common.exceptions;
 
 import com.na.common.result.Result;
+import com.na.common.result.enums.IStatusProvider;
 import com.na.common.result.enums.Status;
 import com.na.common.utils.LocalLangUtil;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -9,22 +10,17 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.HandlerMethod;
@@ -45,7 +41,7 @@ import java.util.stream.Collectors;
  * <p>
  * 支持的异常类型(按优先级):
  * <ul>
- *     <li>{@link BusinessException} — 业务异常, 按 httpStatus 返回</li>
+ *     <li>{@link BusinessException} — 业务异常, 按 httpStatus 返回并保留业务码</li>
  *     <li>{@link UnauthorizedException} — 401 未授权</li>
  *     <li>{@link ForbiddenException} — 403 禁止访问</li>
  *     <li>{@link MethodArgumentNotValidException} — @RequestBody 校验失败</li>
@@ -54,8 +50,8 @@ import java.util.stream.Collectors;
  *     <li>{@link MissingServletRequestParameterException} — 缺少必填参数</li>
  *     <li>{@link IllegalStateException} — 非法状态</li>
  *     <li>{@link NullPointerException} — 空指针</li>
- *     <li>{@link RuntimeException} — 运行时异常(解包嵌套 NaBusinessException)</li>
- *     <li>{@link Exception} — 兜底(读 @NaApiException 注决定返回)</li>
+ *     <li>{@link RuntimeException} — 运行时异常(解包嵌套 BusinessException)</li>
+ *     <li>{@link Exception} — 兜底(读 {@link ApiException} 注解决定返回)</li>
  * </ul>
  */
 @Slf4j
@@ -64,10 +60,47 @@ import java.util.stream.Collectors;
 @Hidden
 public class ApiExceptionHandler {
 
-    @Autowired
-    private Environment environment;
+    /**
+     * 异常处理链路自身出错时对外的固定文案。
+     * <p>不回传异常类名与内部消息 —— {@code Result.errorWithArgs(ex)} 会把
+     * {@code java.lang.XxxException: 内部信息} 原样写进响应体, 属信息泄露。
+     * 具体异常写服务端日志。
+     */
+    private static final String FALLBACK_MSG = "服务端异常，请稍后重试";
+
+    /**
+     * 配置环境。构造器注入：注册器以 AUTOWIRE_CONSTRUCTOR 注册本类，
+     * 必填依赖在构造期就解析，缺依赖时报错位置更明确
+     */
+    private final Environment environment;
+
+    /**
+     * @param environment 配置环境
+     */
+    public ApiExceptionHandler(Environment environment) {
+        this.environment = environment;
+    }
 
     // === 私有工具方法 ===
+
+    /**
+     * 兜底响应体(每次新建, 避免共享可变对象)
+     *
+     * @return 固定文案的失败响应
+     */
+    private static Result<?> fallbackBody() {
+        return new Result<>(Status.INTERNAL_SERVER_ERROR_ARGS.getCode(), FALLBACK_MSG);
+    }
+
+    /**
+     * 记录异常处理链路自身的失败
+     *
+     * @param where 出错位置描述
+     * @param ex    二次异常
+     */
+    private static void logFallback(String where, Exception ex) {
+        log.error("异常处理链路自身出错: {}", where, ex);
+    }
 
     /**
      * 国际化辅助: 根据配置判断是否启用国际化
@@ -122,8 +155,8 @@ public class ApiExceptionHandler {
             log.error("MethodArgumentNotValidException: {}", errors);
             return Result.errorWithArgs(errors);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("MethodArgumentNotValidException", ex);
+            return fallbackBody();
         }
     }
 
@@ -143,8 +176,8 @@ public class ApiExceptionHandler {
             log.error("BindException: {}", errors);
             return Result.errorWithArgs(errors);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("BindException", ex);
+            return fallbackBody();
         }
     }
 
@@ -161,8 +194,8 @@ public class ApiExceptionHandler {
             String message = i18n("缺少必要的请求参数: " + e.getParameterName());
             return Result.errorWithArgs(message);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("MissingServletRequestParameterException", ex);
+            return fallbackBody();
         }
     }
 
@@ -183,15 +216,17 @@ public class ApiExceptionHandler {
             log.error("ConstraintViolationException: {}", errors);
             return Result.errorWithArgs(errors);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("ConstraintViolationException", ex);
+            return fallbackBody();
         }
     }
 
     // === 系统异常 ===
 
     /**
-     * 处理非法状态异常, 返回 403 Forbidden 状态码和国际化错误消息
+     * 处理非法状态异常
+     * <p>按项目约定返回 HTTP 200 + 业务码 {@code USER_NO_ACCESS}(无权限访问),
+     * 与 {@link BusinessException} 的"业务异常用 HTTP 200 + 业务码区分"一致
      *
      * @param e 非法状态异常
      * @return 返回统一的错误响应对象
@@ -204,8 +239,8 @@ public class ApiExceptionHandler {
             return ResponseEntity.status(HttpStatus.OK)
                     .body(Result.errorWithArgs(Status.USER_NO_ACCESS, msg));
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return ResponseEntity.status(HttpStatus.OK).body(Result.errorWithArgs(ex));
+            logFallback("IllegalStateException", ex);
+            return ResponseEntity.status(HttpStatus.OK).body(fallbackBody());
         }
     }
 
@@ -222,8 +257,8 @@ public class ApiExceptionHandler {
             String msg = i18n("空值异常，请联系管理员");
             return Result.errorWithArgs(Status.INTERNAL_SERVER_ERROR_ARGS, msg);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("NullPointerException", ex);
+            return fallbackBody();
         }
     }
 
@@ -243,8 +278,8 @@ public class ApiExceptionHandler {
             return ResponseEntity.status(e.getStatus())
                     .body(Result.errorWithArgs(Status.USER_NEED_AUTHORITIES, msg));
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return ResponseEntity.status(e.getStatus()).body(Result.errorWithArgs(ex));
+            logFallback("UnauthorizedException", ex);
+            return ResponseEntity.status(e.getStatus()).body(fallbackBody());
         }
     }
 
@@ -262,13 +297,14 @@ public class ApiExceptionHandler {
             return ResponseEntity.status(e.getStatus())
                     .body(Result.errorWithArgs(Status.USER_NO_ACCESS, msg));
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return ResponseEntity.status(e.getStatus()).body(Result.errorWithArgs(ex));
+            logFallback("ForbiddenException", ex);
+            return ResponseEntity.status(e.getStatus()).body(fallbackBody());
         }
     }
 
     /**
      * 处理业务异常, 返回业务异常状态码和国际化消息
+     * <p>响应体保留构造异常时传入的状态枚举的业务码; 按字符串构造的异常没有业务码, 回退为通用失败码
      *
      * @param e 业务异常
      * @return 返回统一的错误响应对象
@@ -278,16 +314,20 @@ public class ApiExceptionHandler {
         try {
             String msg = i18n(e.getMessage());
             log.error("BusinessException: {}", msg, e);
-            return ResponseEntity.status(e.getStatus()).body(Result.exception(msg));
+            IStatusProvider provider = e.getStatusProvider();
+            Result<?> body = provider != null
+                    ? new Result<>(provider.getCode(), msg)
+                    : Result.error(msg);
+            return ResponseEntity.status(e.getStatus()).body(body);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return ResponseEntity.status(e.getStatus()).body(Result.errorWithArgs(ex));
+            logFallback("BusinessException", ex);
+            return ResponseEntity.status(e.getStatus()).body(fallbackBody());
         }
     }
 
     /**
      * 处理运行时异常, 统一返回服务器内部错误提示(国际化)
-     * <p>先解包嵌套异常识别内部 NaBusinessException, 否则按通用错误返回
+     * <p>先解包嵌套异常识别内部 BusinessException, 否则按通用错误返回
      *
      * @param e 运行时异常
      * @return 返回统一的错误响应对象
@@ -295,27 +335,29 @@ public class ApiExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public Result<?> handleRuntimeException(RuntimeException e) {
         try {
-            // 解包嵌套异常, 识别内部 NaBusinessException
+            // 解包嵌套异常, 识别内部 BusinessException
             Throwable rootCause = getRootCause(e);
-            if (rootCause instanceof BusinessException) {
-                BusinessException bizEx = (BusinessException) rootCause;
+            if (rootCause instanceof BusinessException bizEx) {
                 String msg = i18n(bizEx.getMessage());
                 log.error("BusinessException(wrapped): {}", msg, bizEx);
-                return Result.errorWithArgs(msg);
+                IStatusProvider provider = bizEx.getStatusProvider();
+                return provider != null
+                        ? new Result<>(provider.getCode(), msg)
+                        : Result.error(msg);
             }
 
             log.error("RuntimeException: {}", e.getMessage(), e);
             String msg = i18n("服务器发生运行时错误，请稍后再试");
             return Result.errorWithArgs(Status.INTERNAL_SERVER_ERROR_ARGS, msg);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("RuntimeException", ex);
+            return fallbackBody();
         }
     }
 
     /**
      * 兜底处理所有未捕获异常
-     * <p>根据方法上 @NaApiException 注解返回不同状态码和错误信息, 错误信息同样支持国际化
+     * <p>根据方法上 {@link ApiException} 注解返回不同状态码和错误信息, 错误信息同样支持国际化
      *
      * @param e        未捕获异常
      * @param webRequest   当前处理请求的方法(可能为 null)
@@ -348,8 +390,9 @@ public class ApiExceptionHandler {
                     }
 
                     Status status = apiException.value();
-                    return (status.getCode() == Status.DEFAULT.getCode()
-                            || status.getCode() == Status.SUCCESS.getCode())
+                    // 用 int 比较: Integer 的 == 只在缓存范围内成立, 依赖它是巧合
+                    int code = status.getCode();
+                    return (code == Status.DEFAULT.getCode() || code == Status.SUCCESS.getCode())
                             ? Result.error(status)
                             : Result.exception(status);
                 }
@@ -358,8 +401,8 @@ public class ApiExceptionHandler {
             String i18nMsg = i18n(e.getMessage());
             return Result.errorWithArgs(Status.INTERNAL_SERVER_ERROR_ARGS, i18nMsg);
         } catch (Exception ex) {
-            log.error("异常处理链路自身出错", ex);
-            return Result.errorWithArgs(ex);
+            logFallback("Exception", ex);
+            return fallbackBody();
         }
     }
 

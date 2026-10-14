@@ -2,11 +2,9 @@ package com.na.common.config;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -17,13 +15,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *      → na-upms 侧即使也写了 ACAO 头，Gateway 会丢弃重复的，不会冲突
  *   2. 前端直连 na-upms(8886) 时 → 本配置生效，独立处理跨域
  * <p>
- * 本配置同时提供：
- *   - WebMvcConfigurer#addCorsMappings：覆盖 MVC 层接口的跨域
- *   - CorsFilter Bean：兜底，确保 Filter 链最前端能处理跨域（含 OPTIONS 预检）
+ * 本配置通过注册 CorsFilter Bean 覆盖整个 Filter 链（含 OPTIONS 预检）。
+ * 若你的项目更希望走 Spring MVC 的注解驱动方式，自行声明
+ * {@link WebMvcConfigurer} 并实现 addCorsMappings 即可，两者同时存在不会冲突。
  *
  * @author na
  */
-@Configuration
 @ConditionalOnProperty(
         name = "na.cors.enable",
         havingValue = "true",
@@ -32,39 +29,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig {
 
     /**
-     * 方式一：WebMvcConfigurer 方式（覆盖 Spring MVC 接口层）
-     * 推荐做法，注解驱动、作用域清晰
-     */
-//    @Bean
-//    public WebMvcConfigurer corsWebMvcConfigurer() {
-//        return new WebMvcConfigurer() {
-//            @Override
-//            public void addCorsMappings(CorsRegistry registry) {
-//                registry.addMapping("/**")
-//                        // 推荐用 allowedOriginPatterns 替代 allowedOrigins
-//                        // allowedOrigins 不支持通配符且与 allowCredentials 同时使用会报错
-//                        .allowedOriginPatterns("*")
-//                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-//                        .allowedHeaders("*")
-//                        // 前端 JS 可读取的响应头（如拿到 token 做鉴权）
-//                        .exposedHeaders(
-//                                "Authorization",
-//                                "Content-Disposition",
-//                                "X-Total-Count",
-//                                "X-Request-Id",
-//                                "X-Tenant-Id"
-//                        )
-//                        // 允许携带 Cookie / Authorization 头
-//                        .allowCredentials(true)
-//                        // 预检请求缓存 1 小时，浏览器在缓存期内对同一路径不再重复发 OPTIONS
-//                        .maxAge(3600);
-//            }
-//        };
-//    }
-
-    /**
-     * 方式二：CorsFilter Bean（兜底覆盖整个 Filter 链）
-     * 与 WebMvcConfigurer 同时存在不冲突，Spring 内部会做合并处理
+     * 注册 CorsFilter Bean，兜底覆盖整个 Filter 链（含 OPTIONS 预检）
+     * <p>与宿主自行声明的 {@code WebMvcConfigurer#addCorsMappings} 同时存在不冲突，
+     * Spring 内部会做合并处理；两种方式按需选用即可
+     *
+     * @return 全局跨域过滤器
      */
     @Bean
     public CorsFilter corsFilter() {

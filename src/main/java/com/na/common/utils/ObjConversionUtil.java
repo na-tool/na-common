@@ -2,7 +2,6 @@ package com.na.common.utils;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -24,7 +23,6 @@ import org.apache.commons.beanutils.converters.LongConverter;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,8 +30,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 对象转换工具类
@@ -183,39 +179,25 @@ public final class ObjConversionUtil {
     /**
      * 仅复制 source 中非 null 且非空字符串(含纯空白)的字段到 target，其余字段保留 target 原值
      * <p>
-     * 实现方式: Jackson 序列化为 Map → 过滤空值 → 反序列化为同类型对象 → beanutils 复制。
-     * 字段名以 getter/setter 属性名为准；静态字段与 @JsonIgnore 标注的字段不参与
+     * 实现方式: 反射逐字段复制 source 中非 null 且非空字符串的字段, target 的其余字段保持原值。
+     * 基本类型字段一律跳过(其默认值 0/false 无法与"未赋值"区分)。
+     * <p>
+     * 早期实现是「Jackson 序列化为 Map → 过滤空值 → 反序列化为同类型对象 → beanutils 复制」，
+     * 被过滤掉的字段在新对象上都是默认值，全量复制会把 target 的其余字段一并置空/置 0，
+     * 与"其余字段保留 target 原值"的约定相反，属静默数据丢失，故改为直接委托反射版本。
      *
      * @param source 源对象
      * @param target 目标对象
-     * @param clazz  source 的类类型
+     * @param clazz  保留仅为兼容既有调用方，当前实现不依赖它
      * @param <T>    类型参数
-     * @throws RuntimeException 过滤或复制失败时抛出
+     * @throws RuntimeException 字段写入失败时抛出
      */
     public static <T> void copyNonNullAndNonEmptyFields(T source, T target, Class<T> clazz) {
-        if (source == null || target == null || clazz == null) {
+        if (source == null || target == null) {
             return;
         }
-
-        // 序列化为属性 Map(指定泛型避免原生 Map 的 unchecked 警告)
-        Map<String, Object> map = objectMapper.convertValue(source, new TypeReference<Map<String, Object>>() {
-        });
-
-        // 移除 null 与空字符串(含纯空白)字段
-        map = map.entrySet().stream()
-                .filter(e -> {
-                    Object val = e.getValue();
-                    return val != null && (!(val instanceof String) || !((String) val).trim().isEmpty());
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        T filtered = objectMapper.convertValue(map, clazz);
-
-        try {
-            beanUtils.copyProperties(target, filtered);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Failed to copy non-null and non-empty fields", e);
-        }
+        // 注意参数方向: overwriteNonNullAndNonEmptyFields(被更新对象, 数据来源对象)
+        overwriteNonNullAndNonEmptyFields(target, source);
     }
 
     /**

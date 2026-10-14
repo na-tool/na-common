@@ -1,11 +1,14 @@
 package com.na.common.utils;
 
+import com.alibaba.fastjson2.JSON;
 import com.na.common.annotation.ExcelExportColumn;
-import com.na.common.demo.UserExport;
+import com.na.common.result.Result;
+import com.na.common.result.enums.Status;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.MediaType;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -100,52 +103,54 @@ public final class ExcelExportResultUtil {
      * @throws Exception 导出过程中出现任何异常
      */
     public static <T> void export(List<T> dataList, Class<T> clazz, OutputStream out, int minColWidth) throws Exception {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("导出数据");
+        // try-with-resources: 中途任何异常(字段读取、写入失败等)都不会漏掉 close,
+        // 原实现只在方法末尾 close, 抛异常时 POI 占用的内存与临时文件要等 GC 才释放
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("导出数据");
 
-        // 读取带注解字段并按 order 排序
-        List<Field> excelFields = getAnnotatedFields(clazz);
+            // 读取带注解字段并按 order 排序
+            List<Field> excelFields = getAnnotatedFields(clazz);
 
-        // 创建样式(表头加粗居中 + 数据居中, 统一加边框)
-        CellStyle headerStyle = createStyle(workbook, true);
-        CellStyle dataStyle = createStyle(workbook, false);
+            // 创建样式(表头加粗居中 + 数据居中, 统一加边框)
+            CellStyle headerStyle = createStyle(workbook, true);
+            CellStyle dataStyle = createStyle(workbook, false);
 
-        // 写表头
-        Row headerRow = sheet.createRow(0);
-        for (int i = 0; i < excelFields.size(); i++) {
-            ExcelExportColumn col = excelFields.get(i).getAnnotation(ExcelExportColumn.class);
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(col.headerName());
-            cell.setCellStyle(headerStyle);
-        }
-
-        // 写数据
-        int rowIndex = 1;
-        for (T item : dataList) {
-            Row row = sheet.createRow(rowIndex++);
+            // 写表头
+            Row headerRow = sheet.createRow(0);
             for (int i = 0; i < excelFields.size(); i++) {
-                Field field = excelFields.get(i);
-                field.setAccessible(true);
-                Object value = field.get(item);
-                Cell cell = row.createCell(i);
-                setCellValue(cell, value, field.getAnnotation(ExcelExportColumn.class));
-                cell.setCellStyle(dataStyle);
+                ExcelExportColumn col = excelFields.get(i).getAnnotation(ExcelExportColumn.class);
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(col.headerName());
+                cell.setCellStyle(headerStyle);
             }
-        }
 
-        // 自动列宽 + 最小列宽控制
-        for (int i = 0; i < excelFields.size(); i++) {
-            sheet.autoSizeColumn(i);
-            if (minColWidth > 0) {
-                int currentWidth = sheet.getColumnWidth(i) / 256;
-                if (currentWidth < minColWidth) {
-                    sheet.setColumnWidth(i, minColWidth * 256);
+            // 写数据
+            int rowIndex = 1;
+            for (T item : dataList) {
+                Row row = sheet.createRow(rowIndex++);
+                for (int i = 0; i < excelFields.size(); i++) {
+                    Field field = excelFields.get(i);
+                    field.setAccessible(true);
+                    Object value = field.get(item);
+                    Cell cell = row.createCell(i);
+                    setCellValue(cell, value, field.getAnnotation(ExcelExportColumn.class));
+                    cell.setCellStyle(dataStyle);
                 }
             }
-        }
 
-        workbook.write(out);
-        workbook.close();
+            // 自动列宽 + 最小列宽控制
+            for (int i = 0; i < excelFields.size(); i++) {
+                sheet.autoSizeColumn(i);
+                if (minColWidth > 0) {
+                    int currentWidth = sheet.getColumnWidth(i) / 256;
+                    if (currentWidth < minColWidth) {
+                        sheet.setColumnWidth(i, minColWidth * 256);
+                    }
+                }
+            }
+
+            workbook.write(out);
+        }
     }
 
     /**
@@ -183,6 +188,31 @@ public final class ExcelExportResultUtil {
             out.flush();
         } catch (Exception e) {
             log.error("Excel 导出失败", e);
+            // 原实现只记日志就返回, 客户端收到的是「空的 200」, 无法区分导出成功与失败
+            writeExportFailure(response);
+        }
+    }
+
+    /**
+     * 导出失败后的兜底响应: 响应尚未提交时回写 500 + 统一 JSON 错误体
+     * <p>已经写出一部分内容(响应已提交)时无法再改状态码, 只能记日志
+     *
+     * @param response HTTP 响应对象
+     */
+    private static void writeExportFailure(HttpServletResponse response) {
+        if (response.isCommitted()) {
+            log.warn("Excel 导出失败时响应已提交, 无法回写错误状态码");
+            return;
+        }
+        try {
+            response.reset();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write(JSON.toJSONString(
+                    new Result<>(Status.INTERNAL_SERVER_ERROR_ARGS.getCode(), "导出失败，请稍后重试")));
+        } catch (IOException ioException) {
+            log.error("Excel 导出失败后回写错误响应也失败", ioException);
         }
     }
 
@@ -214,9 +244,13 @@ public final class ExcelExportResultUtil {
      */
     private static List<Field> getAnnotatedFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(ExcelExportColumn.class)) {
-                fields.add(field);
+        // 沿父类链收集: 原实现只扫 clazz.getDeclaredFields(),
+        // 继承自 BaseEntity 等父类的字段会被静默跳过, 既不导出也无任何提示
+        for (Class<?> current = clazz; current != null && current != Object.class; current = current.getSuperclass()) {
+            for (Field field : current.getDeclaredFields()) {
+                if (field.isAnnotationPresent(ExcelExportColumn.class)) {
+                    fields.add(field);
+                }
             }
         }
         fields.sort(Comparator.comparingInt(f -> f.getAnnotation(ExcelExportColumn.class).order()));
@@ -273,45 +307,4 @@ public final class ExcelExportResultUtil {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        UserExport u1 = new UserExport(1L, "张三", new Date(), LocalDateTime.now());
-        UserExport u2 = new UserExport(2L, "李四", new Date(), LocalDateTime.now().minusDays(1));
-
-        try (FileOutputStream fos = new FileOutputStream("用户导出.xlsx")) {
-            export(Arrays.asList(u1, u2), UserExport.class, fos, 15);
-        }
-
-
-
-//        downPipline().then((response) => {
-//                const blob = new Blob([response], {
-//                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-//                });
-//
-//                const disposition = response?.headers?.['content-disposition'];
-//        let filename = '导出数据.xlsx';
-//        if (disposition) {
-//                    const filenameMatch = disposition.match(/filename\*=UTF-8''(.+)$/);
-//            if (filenameMatch && filenameMatch[1]) {
-//                filename = decodeURIComponent(filenameMatch[1]);
-//            } else {
-//                        const fallbackMatch = disposition.match(/filename="(.+)"/);
-//                if (fallbackMatch && fallbackMatch[1]) {
-//                    filename = fallbackMatch[1];
-//                }
-//            }
-//        }
-//
-//                const link = document.createElement('a');
-//                const url = window.URL.createObjectURL(blob);
-//        link.href = url;
-//        link.setAttribute('download', filename);
-//        document.body.appendChild(link);
-//        link.click();
-//        document.body.removeChild(link);
-//        window.URL.revokeObjectURL(url);
-//            }).catch(err => {
-//                console.error('下载失败:', err);
-//            });
-    }
 }

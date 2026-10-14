@@ -1,7 +1,6 @@
 package com.na.common.utils;
 
 import com.na.common.annotation.ExcelImportColumn;
-import com.na.common.demo.CityImport;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,7 +15,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -78,8 +76,9 @@ public class ExcelImportResultUtil<T> {
     public static <M> ExcelImportResultUtil<M> getList(Class<M> clazz, MultipartFile file) {
         ExcelImportResultUtil<M> result = new ExcelImportResultUtil<>();
 
-        try (InputStream fis = file.getInputStream()) {
-            Workbook workbook = resolveWorkbook(file, fis);
+        // Workbook 也必须纳入 try-with-resources: 否则 POI 占用的内存与临时文件要等 GC 才释放
+        try (InputStream fis = file.getInputStream();
+             Workbook workbook = resolveWorkbook(file, fis)) {
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rows = sheet.rowIterator();
 
@@ -213,19 +212,4 @@ public class ExcelImportResultUtil<T> {
         }
     }
 
-    public static void main(String[] args) {
-        MultipartFile file = null ;
-        ExcelImportResultUtil<CityImport> result = ExcelImportResultUtil.getList(CityImport.class, file);
-
-        List<CityImport> data = result.getData();
-        List<String> errors = result.getErrorMessages();
-
-        // 可根据情况返回解析结果
-        if (!errors.isEmpty()) {
-            System.out.println("导入失败！");
-        }
-
-        // 成功导入的处理，比如入库
-        data.forEach(System.out::println); // 这里只是打印
-    }
 }

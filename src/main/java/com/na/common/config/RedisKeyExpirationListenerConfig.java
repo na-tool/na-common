@@ -3,9 +3,9 @@ package com.na.common.config;
 import com.na.common.config.service.IRedisKeyExpirationService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -30,7 +30,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  *     redis:
  *       host: 127.0.0.1
  * na:
- *   redis-message:
+ *   redisMessage:
  *     enable: true
  *
  * // 业务侧实现处理逻辑
@@ -45,12 +45,22 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  * }</pre>
  */
 @Slf4j
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redisMessage.enable:false}'.equals('true')")
 public class RedisKeyExpirationListenerConfig implements MessageListener {
 
-    @Autowired
-    private RedisMessageListenerContainer listenerContainer;
+    /**
+     * Redis 消息监听容器
+     * <p>用 {@link ObjectProvider} 获取而非直接注入: 容器由 RedisListenerConfig 在
+     * na.redisListener.enable 或 na.redisMessage.enable 时注册, 缺失时跳过订阅而不是启动失败
+     */
+    private final ObjectProvider<RedisMessageListenerContainer> listenerContainerProvider;
+
+    /**
+     * @param listenerContainerProvider 监听容器提供者(可能为空)
+     */
+    public RedisKeyExpirationListenerConfig(ObjectProvider<RedisMessageListenerContainer> listenerContainerProvider) {
+        this.listenerContainerProvider = listenerContainerProvider;
+    }
 
     /**
      * Key 过期业务处理器
@@ -66,8 +76,14 @@ public class RedisKeyExpirationListenerConfig implements MessageListener {
      */
     @PostConstruct
     public void init() {
+        RedisMessageListenerContainer container = listenerContainerProvider.getIfAvailable();
+        if (container == null) {
+            log.warn("未找到 RedisMessageListenerContainer, 跳过 key 过期事件订阅; "
+                    + "请确认已开启 na.redisListener.enable 或 na.redisMessage.enable");
+            return;
+        }
         // __keyevent@<db>__:expired: <db> 用 * 通配所有库; 需 Redis 开启 notify-keyspace-events Ex
-        listenerContainer.addMessageListener(this, new PatternTopic("__keyevent@*__:expired"));
+        container.addMessageListener(this, new PatternTopic("__keyevent@*__:expired"));
         log.info("已启动 Redis Key 过期事件监听器, 订阅模式: __keyevent@*__:expired");
     }
 

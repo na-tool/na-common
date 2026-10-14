@@ -10,7 +10,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
@@ -44,7 +43,6 @@ import java.util.Locale;
  *   staticWebSource: true   # 可选: 放行静态资源
  * }</pre>
  */
-@Configuration
 @ConditionalOnProperty(
         name = {"na.i18n.enable"},
         havingValue = "true",

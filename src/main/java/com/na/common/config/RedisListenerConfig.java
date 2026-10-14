@@ -2,7 +2,6 @@ package com.na.common.config;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
@@ -12,7 +11,11 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  * 注册 {@link RedisMessageListenerContainer} Bean, 供订阅(Pub/Sub)或 Key 过期事件监听挂载 Listener。
  * 容器线程安全, 可挂载多个 Listener 各自订阅不同 Topic。
  * <p>
- * 生效条件: 配置了 {@code spring.data.redis.host} 且 {@code na.redisListener.enable=true}(默认关闭)
+ * 生效条件: 配置了 {@code spring.data.redis.host}, 且 {@code na.redisListener.enable=true}
+ * 或 {@code na.redisMessage.enable=true}(两者默认关闭)。
+ * <p>
+ * 后者(key 过期监听)复用本容器, 故任一开启都要注册容器; 否则只开
+ * {@code na.redisMessage.enable} 时订阅方找不到容器会启动失败。
  * <p>
  * 配置示例(application.yml):
  * <pre>{@code
@@ -21,12 +24,11 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  *     redis:
  *       host: 127.0.0.1
  * na:
- *   redis-listener:
+ *   redisListener:
  *     enable: true
  * }</pre>
  */
-@Configuration(proxyBeanMethods = false)
-@ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redisListener.enable:false}'.equals('true')")
+@ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && ('${na.redisListener.enable:false}'.equals('true') || '${na.redisMessage.enable:false}'.equals('true'))")
 public class RedisListenerConfig {
 
     /**
@@ -51,7 +53,7 @@ public class RedisListenerConfig {
      * @return RedisMessageListenerContainer 实例
      */
     @Bean
-    public RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory) {
+    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         return container;

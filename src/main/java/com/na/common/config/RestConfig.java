@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -52,7 +51,6 @@ import java.util.Iterator;
  *     若项目不使用 Spring Cloud 服务发现, 该注解不影响普通 URL 调用</li>
  * </ul>
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = {"na.rest.enable"},
         havingValue = "true",

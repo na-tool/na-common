@@ -10,7 +10,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
 
 /**
  * Feign 内部调用安全校验切面
@@ -30,7 +30,6 @@ import org.springframework.stereotype.Component;
  * }</pre>
  */
 @Aspect
-@Component
 @Slf4j
 @ConditionalOnProperty(
         name = "na.feign.enable",
@@ -65,6 +64,7 @@ public class FeignAop {
             }
         }
         // 非法请求: 缺少 Feign 标识请求头
-        throw new UnauthorizedException("非法请求", null);
+        // 显式传 401: 传 null 会回退成 HTTP 200, 客户端无法据此识别拒绝
+        throw new UnauthorizedException("非法请求", HttpStatus.UNAUTHORIZED);
     }
 }

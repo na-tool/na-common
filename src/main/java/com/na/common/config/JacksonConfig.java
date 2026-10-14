@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 /**
@@ -26,7 +25,6 @@ import org.springframework.core.env.Environment;
  *     enabled: true  # 同时开启 JSON XSS 防护(可选)
  * }</pre>
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = "na.jackson.enable",
         havingValue = "true",
@@ -59,7 +57,7 @@ public class JacksonConfig {
      * @return Jackson2ObjectMapperBuilderCustomizer
      */
     @Bean
-    public Jackson2ObjectMapperBuilderCustomizer customizer(JacksonModule module) {
+    public Jackson2ObjectMapperBuilderCustomizer naJacksonCustomizer(JacksonModule module) {
         return builder -> {
             // 安装已有的通用模块
             builder.modulesToInstall(module);

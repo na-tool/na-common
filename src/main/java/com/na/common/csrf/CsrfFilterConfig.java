@@ -3,7 +3,6 @@ package com.na.common.csrf;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * CSRF 过滤器注册配置
@@ -17,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
  *     enabled: true   # 开启 CSRF 过滤器
  * }</pre>
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = "na.csrf.enabled",
         havingValue = "true",

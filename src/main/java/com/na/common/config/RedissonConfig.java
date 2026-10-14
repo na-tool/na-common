@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 /**
@@ -50,7 +49,6 @@ import org.springframework.util.StringUtils;
  *     retry-interval: 1500      # 重试间隔(毫秒), 默认 1500
  * }</pre>
  */
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.redisson.enable:false}'.equals('true')")
 public class RedissonConfig {
 

@@ -22,21 +22,50 @@ public class IpParseUtil {
     private static final String XDB_PATH = "ip2region.xdb";
 
     /**
-     * 将整个 xdb 文件(约 11M)一次性加载到内存。
-     * 此种创建方式支持多线程并发调用，全局只需初始化一次。
-     * 注意：该 Searcher 为进程级共享单例，严禁调用 close()，
-     * 否则内部缓冲区被释放后，后续所有解析请求都会失败。
+     * Searcher 的延迟初始化持有者。
+     * <p>
+     * 用"初始化即按需"惯用法替代静态块：静态块一旦抛异常，JVM 会把本类标记为不可用，
+     * 之后任何访问都变成没有原始上下文的 {@code NoClassDefFoundError} —— 把"数据文件缺失"
+     * 这个本来可定位、可修复的问题伪装成"类加载失败"。放进持有者后：
+     * <ul>
+     *   <li>只有真正调用解析方法时才会触发加载，仅仅被类扫描碰到不会让应用起不来</li>
+     *   <li>异常信息与 cause 保持完整，直接指明缺失的是哪个 classpath 资源</li>
+     * </ul>
      */
-    private static final Searcher SEARCHER;
+    private static final class SearcherHolder {
 
-    static {
-        try (InputStream inputStream = new ClassPathResource(XDB_PATH).getInputStream()) {
-            // getInputStream() 同时兼容文件系统(classpath 目录)和 JAR 包两种部署形态，无需按协议区分读取方式
-            SEARCHER = Searcher.newWithBuffer(inputStream.readAllBytes());
-            log.info("加载了ip2region.xdb文件, Searcher初始化完成!");
-        } catch (IOException e) {
-            log.error("初始化ip2region.xdb文件失败,报错信息:[{}]", e.getMessage(), e);
-            throw new RuntimeException("系统异常!", e);
+        /**
+         * 将整个 xdb 文件(约 11M)一次性加载到内存。
+         * 此种创建方式支持多线程并发调用，全局只需初始化一次。
+         * 注意：该 Searcher 为进程级共享单例，严禁调用 close()，
+         * 否则内部缓冲区被释放后，后续所有解析请求都会失败。
+         */
+        private static final Searcher INSTANCE = load();
+
+        private SearcherHolder() {
+        }
+
+        /**
+         * 加载 xdb 并构造 Searcher
+         *
+         * @return 进程级共享的 Searcher
+         * @throws IllegalStateException 文件缺失或读取失败，消息中给出精确原因
+         */
+        private static Searcher load() {
+            ClassPathResource resource = new ClassPathResource(XDB_PATH);
+            if (!resource.exists()) {
+                throw new IllegalStateException(
+                        "IP 归属地数据文件缺失: classpath:" + XDB_PATH
+                                + "；请确认 src/main/resources/" + XDB_PATH + " 已随包发布");
+            }
+            try (InputStream inputStream = resource.getInputStream()) {
+                // getInputStream() 同时兼容文件系统(classpath 目录)和 JAR 包两种部署形态，无需按协议区分读取方式
+                Searcher searcher = Searcher.newWithBuffer(inputStream.readAllBytes());
+                log.info("ip2region.xdb 加载完成, Searcher 初始化成功");
+                return searcher;
+            } catch (IOException e) {
+                throw new IllegalStateException("读取 IP 归属地数据文件失败: classpath:" + XDB_PATH, e);
+            }
         }
     }
 
@@ -67,8 +96,9 @@ public class IpParseUtil {
             long ip = Searcher.checkIP(ipStr);
             return parse(ip, index);
         } catch (Exception e) {
-            log.error("ip解析为long错误,ipStr:[{}],错误信息:[{}]", ipStr, e.getMessage(), e);
-            throw new RuntimeException("系统异常!", e);
+            log.error("ip 解析为 long 失败, ipStr:[{}], 错误信息:[{}]", ipStr, e.getMessage(), e);
+            // 消息带上入参与原因, 便于区分"IP 格式非法"与"数据文件不可用"
+            throw new RuntimeException("IP 地址解析失败: " + ipStr, e);
         }
     }
 
@@ -81,12 +111,12 @@ public class IpParseUtil {
      */
     public static List<String> parse(Long ip, int[] index) {
         if (ip == null) {
-            log.error("根据ip解析地址失败,ip为空,index:[{}]", Arrays.toString(index));
-            throw new RuntimeException("系统异常!");
+            log.error("根据 ip 解析地址失败, ip 为空, index:[{}]", Arrays.toString(index));
+            throw new RuntimeException("IP 归属地查询失败: 入参 ip 为 null");
         }
         try {
             // region 格式固定为: 国家|区域|省份|城市|ISP
-            String region = SEARCHER.search(ip);
+            String region = SearcherHolder.INSTANCE.search(ip);
             String[] split = region.split("\\|");
             if (index == null) {
                 return Arrays.asList(split);
@@ -98,8 +128,8 @@ public class IpParseUtil {
             }
             return regionList;
         } catch (Exception e) {
-            log.error("根据ip解析地址失败,ip:[{}],index:[{}],报错信息:[{}]", ip, Arrays.toString(index), e.getMessage(), e);
-            throw new RuntimeException("系统异常!", e);
+            log.error("根据 ip 解析地址失败, ip:[{}], index:[{}], 报错信息:[{}]", ip, Arrays.toString(index), e.getMessage(), e);
+            throw new RuntimeException("IP 归属地查询失败: " + ip, e);
         }
     }
 }

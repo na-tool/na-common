@@ -58,7 +58,7 @@ public final class SM3Util {
             return "";
         }
         byte[] digest = doHash(input.getBytes(StandardCharsets.UTF_8));
-        return toHex(digest);
+        return CryptoSupport.toHex(digest);
     }
 
     /**
@@ -89,7 +89,7 @@ public final class SM3Util {
             return "";
         }
         byte[] data = (salt + input).getBytes(StandardCharsets.UTF_8);
-        return toHex(doHash(data));
+        return CryptoSupport.toHex(doHash(data));
     }
 
     /**
@@ -120,12 +120,20 @@ public final class SM3Util {
         }
         // HMAC 构造: SM3(key XOR opad || SM3(key XOR ipad || data))
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+
+        // RFC 2104: 密钥长于分组长度(64 字节)时, 先哈希压缩为摘要再使用。
+        // 直接截断会使结果与任何标准实现都不一致, 跨系统验签必然失败。
+        if (keyBytes.length > 64) {
+            keyBytes = doHash(keyBytes);
+        }
+
         byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
 
         // ipad / opad
         byte[] ipad = new byte[64];
         byte[] opad = new byte[64];
         for (int i = 0; i < 64; i++) {
+            // 短于 64 字节的密钥按 RFC 2104 补零
             byte k = i < keyBytes.length ? keyBytes[i] : 0;
             ipad[i] = (byte) (k ^ 0x36);
             opad[i] = (byte) (k ^ 0x5c);
@@ -141,7 +149,7 @@ public final class SM3Util {
         byte[] outerInput = new byte[64 + inner.length];
         System.arraycopy(opad, 0, outerInput, 0, 64);
         System.arraycopy(inner, 0, outerInput, 64, inner.length);
-        return toHex(doHash(outerInput));
+        return CryptoSupport.toHex(doHash(outerInput));
     }
 
     /**
@@ -157,7 +165,7 @@ public final class SM3Util {
             return false;
         }
         String computed = hmacSm3(data, key);
-        return constantTimeEquals(computed, signature);
+        return CryptoSupport.constantTimeEquals(computed, signature);
     }
 
     // === 内部辅助方法 ===
@@ -174,37 +182,5 @@ public final class SM3Util {
         byte[] output = new byte[digest.getDigestSize()];
         digest.doFinal(output, 0);
         return output;
-    }
-
-    /**
-     * 字节数组转小写十六进制字符串
-     *
-     * @param bytes 字节数组
-     * @return 小写十六进制字符串
-     */
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b & 0xff));
-        }
-        return sb.toString();
-    }
-
-    /**
-     * 恒定时间字符串比较, 防止时序攻击
-     *
-     * @param a 字符串 a
-     * @param b 字符串 b
-     * @return true=相等
-     */
-    private static boolean constantTimeEquals(String a, String b) {
-        if (a.length() != b.length()) {
-            return false;
-        }
-        int result = 0;
-        for (int i = 0; i < a.length(); i++) {
-            result |= a.charAt(i) ^ b.charAt(i);
-        }
-        return result == 0;
     }
 }

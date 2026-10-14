@@ -2,7 +2,6 @@ package com.na.common.csrf;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +27,15 @@ import java.util.List;
  * }</pre>
  */
 @Data
-@Component
 @ConfigurationProperties(prefix = "na.csrf")
 public class AutoCsrfConfig {
+
+    /**
+     * 是否开启 CSRF 过滤器(默认关闭)
+     * <p>声明为字段后, 开关、属性绑定与 IDE 配置提示三者归一;
+     * {@code CsrfFilterConfig} 的 {@code @ConditionalOnProperty} 读的是同一个键
+     */
+    private Boolean enabled = false;
 
     /**
      * 是否允许 Referer 为空的请求(默认 true = 不拦截)

@@ -115,25 +115,4 @@ public class RegionUtil {
         return region != null ? region.name : null;
     }
 
-    /**
-     * 主方法用于测试区域工具类的功能
-     * @param args 命令行参数
-     */
-    public static void main(String[] args) {
-        // 测试街道级编码
-        System.out.println(getFullPath("110101001"));
-        // 输出: [北京市, 市辖区, 东城区, 东华门街道]
-
-        // 测试区级编码
-        System.out.println(getFullPath("110101"));
-        // 输出: [北京市, 市辖区, 东城区]
-
-        // 测试省级2位编码
-        System.out.println(getFullPath("11"));
-        // 输出: [北京市]
-
-        // 测试省级6位编码(兼容处理)
-        System.out.println(getFullPath("110000"));
-        // 输出: [北京市]
-    }
 }

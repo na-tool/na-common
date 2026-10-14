@@ -1,39 +1,30 @@
 package com.na.common.aop;
 
 import com.na.common.annotation.NoRepeatSubmitIP;
-import com.na.common.constant.IGlobalConst;
-import com.na.common.exceptions.BusinessException;
-import com.na.common.result.enums.Status;
 import com.na.common.utils.AddressUtil;
 import com.na.common.utils.CacheTemplateUtil;
-import com.na.common.utils.CommonUtil;
-import com.na.common.utils.DateTimeUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 防 IP 重复提交 AOP 拦截器
  * <p>
- * 基于 Redis 计数: 同一 IP + 请求路径 + (可选)请求参数, 在指定时间窗口内提交次数超过 {@code num} 时拒绝
+ * 基于 Redis 计数: 同一 IP + 请求路径 + (可选)请求参数, 在指定时间窗口内提交次数超过 {@code num} 时拒绝。
+ * <p>
+ * <b>本类只依赖客户端 IP 与请求路径, 不需要宿主提供任何用户体系实现</b>
+ * （这正是它与 {@link NoRepeatSubmitAOP} 的区别）。因此它在未登录、无用户体系的场景也能独立生效:
+ * 只要 {@code na.submit.enable=true} 且配置了 Redis 本切面就会注册，与
+ * {@code INoRepeatSubmitUserService} 是否存在无关。
+ * <p>
+ * 公共流程与可用性约定见 {@link AbstractRepeatSubmitAspect}。
  * <p>
  * 配置示例:
  * <pre>{@code
- * # application.yml
  * spring:
  *   data:
  *     redis:
@@ -52,14 +43,16 @@ import java.util.concurrent.TimeUnit;
  * }</pre>
  */
 @Aspect
-@Component
 @Slf4j
-@Configuration(proxyBeanMethods = false)
 @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty() && '${na.submit.enable:false}'.equals('true')")
-public class NoRepeatSubmitIPAOP {
+public class NoRepeatSubmitIPAOP extends AbstractRepeatSubmitAspect {
 
-    @Autowired
-    private CacheTemplateUtil cacheTemplateUtil;
+    /**
+     * @param cacheTemplateUtil Redis 缓存工具
+     */
+    public NoRepeatSubmitIPAOP(CacheTemplateUtil cacheTemplateUtil) {
+        super(cacheTemplateUtil);
+    }
 
     /**
      * 切点: 标注了 {@link NoRepeatSubmitIP} 的方法
@@ -70,99 +63,26 @@ public class NoRepeatSubmitIPAOP {
 
     /**
      * 环绕通知: 校验同一 IP 在时间窗口内的提交次数
-     * <p>
-     * 流程:
-     * <ol>
-     *   <li>构建防重 key: IP + 认证头 + 请求路径 + (可选)请求参数</li>
-     *   <li>从 Redis 读取当前提交计数</li>
-     *   <li>若计数 >= num, 抛 {@link BusinessException} 拒绝请求</li>
-     *   <li>否则计数 +1, 用剩余 TTL 或原始过期时间重新写入缓存</li>
-     * </ol>
      *
      * @param pjp 切入点
      * @return 被拦截方法的返回值
-     * @throws Throwable 计数超限抛 {@link BusinessException}; 被拦截方法异常时原样抛出
+     * @throws Throwable 计数超限抛业务异常; 被拦截方法异常时原样抛出
      */
     @Around("pointCut()")
     public Object around(ProceedingJoinPoint pjp) throws Throwable {
-        HttpServletRequest request = CommonUtil.getCurrentHttpRequest();
-
-        // 构建 key: IP + 认证头 + 请求路径 + (可选)请求参数
-        String key = buildKey(request, pjp);
-
-        // 读取注解配置
-        NoRepeatSubmitIP annotation = ((MethodSignature) pjp.getSignature()).getMethod().getAnnotation(NoRepeatSubmitIP.class);
-        long expire = annotation.value();
-        int num = annotation.num();
-        boolean showRemainingTime = annotation.showRemainingTime();
-
-        // 从 Redis 读取当前提交计数
-        int cacheNum = 0;
-        Integer cache = cacheTemplateUtil.getCache(key, Integer.class);
-        if (cache != null) {
-            cacheNum = cache;
-            Long remainingExpireTime = cacheTemplateUtil.getRemainingExpireTime(key);
-
-            // 超过次数限制, 拒绝请求
-            if (cacheNum >= num) {
-                log.warn("重复请求拦截: {}", key);
-                String msg = buildRejectMessage(annotation, remainingExpireTime, showRemainingTime);
-                throw new BusinessException(msg, HttpStatus.OK);
-            }
-
-            // 未超限: 继续使用剩余 TTL, 保持原有窗口边界
-            if (remainingExpireTime != null && remainingExpireTime > 0) {
-                expire = remainingExpireTime;
-            }
-        }
-
-        // 计数 +1, 刷新/设置缓存
-        cacheTemplateUtil.setCache(key, cacheNum + 1, expire, TimeUnit.MILLISECONDS);
-
-        return pjp.proceed();
+        NoRepeatSubmitIP annotation = ((MethodSignature) pjp.getSignature())
+                .getMethod().getAnnotation(NoRepeatSubmitIP.class);
+        // 计数主体 = 客户端 IP; AddressUtil 取不到时返回空串, 公共骨架会据此放行并告警
+        return checkAndProceed(pjp, RepeatSubmitRule.from(annotation), AddressUtil::getIpAddress);
     }
 
-    /**
-     * 构建防重 key: 前缀 + IP + 认证头 + 请求路径 + (可选)请求参数
-     *
-     * @param request HTTP 请求
-     * @param pjp     切入点(用于读取 {@link NoRepeatSubmitIP#requestParams()})
-     * @return Redis 缓存 key
-     */
-    private String buildKey(HttpServletRequest request, ProceedingJoinPoint pjp) {
-        String ip = AddressUtil.getIpAddress(request);
-        String authentication = request.getHeader(IGlobalConst.SECURITY.HEADER_STRING);
-        if (!StringUtils.hasText(authentication)) {
-            authentication = "auth";
-        }
-        String key = ip + authentication + "-" + request.getServletPath();
-
-        // 可选: 追加请求参数, 让不同参数的请求分别计数
-        NoRepeatSubmitIP annotation = ((MethodSignature) pjp.getSignature()).getMethod().getAnnotation(NoRepeatSubmitIP.class);
-        if (annotation.requestParams()) {
-            Map<String, String[]> parameterMap = request.getParameterMap();
-            StringBuilder sb = new StringBuilder();
-            parameterMap.forEach((k, v) -> sb.append(k).append(Arrays.toString(v)));
-            key = key + "-" + sb;
-        }
-        return IGlobalConst.CACHE.REPEATED_SUBMIT_KEY + key;
+    @Override
+    protected String aspectName() {
+        return "NoRepeatSubmitIP";
     }
 
-    /**
-     * 构建拒绝消息: 基础消息 + (可选)剩余时间
-     *
-     * @param annotation          注解配置
-     * @param remainingExpireTime 剩余过期时间(毫秒), 可能为 null
-     * @param showRemainingTime   是否追加剩余时间
-     * @return 拒绝消息
-     */
-    private String buildRejectMessage(NoRepeatSubmitIP annotation, Long remainingExpireTime, boolean showRemainingTime) {
-        String msg = annotation.msg();
-        if (showRemainingTime && remainingExpireTime != null && remainingExpireTime > 0) {
-            msg = msg + annotation.dateStartMsg()
-                    + DateTimeUtil.parseToString(remainingExpireTime, annotation.dateFormat())
-                    + annotation.dateEndMsg();
-        }
-        return StringUtils.hasText(msg) ? msg : Status.FAIL_REQUEST_REPETITION.getMsg();
+    @Override
+    protected String blankSubjectMessage() {
+        return "无法解析客户端 IP, 基于 IP 的防重复提交对这些请求已失效; 请检查代理头配置(见 AddressUtil)。";
     }
 }

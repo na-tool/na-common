@@ -74,23 +74,9 @@ public final class DigestUtil {
         try {
             MessageDigest md = MessageDigest.getInstance(algorithm);
             byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            return toHex(digest);
+            return CryptoSupport.toHex(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(algorithm + "算法不可用", e);
         }
-    }
-
-    /**
-     * 字节数组转小写十六进制字符串
-     *
-     * @param bytes 字节数组
-     * @return 小写十六进制字符串
-     */
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b & 0xff));
-        }
-        return sb.toString();
     }
 }

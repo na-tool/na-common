@@ -4,11 +4,9 @@ import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import com.na.common.utils.DateTimeUtil;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
-@Component
 @ConditionalOnProperty(
         name = {"na.sqlTime.enable"},
         havingValue = "true",

@@ -8,7 +8,6 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.ParametersWithRandom;
 import org.bouncycastle.crypto.signers.SM2Signer;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 
@@ -63,7 +62,7 @@ public final class SM2Util {
 
     static {
         // 注册 BouncyCastle Provider
-        java.security.Security.addProvider(new BouncyCastleProvider());
+        CryptoSupport.ensureBouncyCastleProvider();
     }
 
     /** Base64 编码器 */

@@ -469,13 +469,4 @@ public class DateTimeUtil {
         return ZonedDateTime.now(zoneId).isAfter(end);
     }
 
-    /**
-     * 主方法用于测试时间戳获取
-     * @param args 命令行参数
-     */
-    public static void main(String[] args) {
-        System.out.println(getBeijingTimestampMillis());
-        System.out.println(getBeijingTimestampAfterDays(1));
-        System.out.println(getBeijingTimestampAfterDays(-1));
-    }
 }

@@ -12,7 +12,6 @@ public class LocalDateConverter implements Converter {
             return type.cast(value);
         }
         try {
-//            return type.cast(LocalDate.parse(value.toString(), DateTimeFormatter.ISO_LOCAL_DATE));
             return type.cast(LocalDate.parse(value.toString()));
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to convert value to LocalDate: " + value, e);

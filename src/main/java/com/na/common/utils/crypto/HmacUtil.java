@@ -94,7 +94,7 @@ public final class HmacUtil {
             return false;
         }
         String computed = hmacSha256(data, key);
-        return constantTimeEquals(computed, signature);
+        return CryptoSupport.constantTimeEquals(computed, signature);
     }
 
     /**
@@ -116,41 +116,9 @@ public final class HmacUtil {
             byte[] result = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return base64
                     ? Base64.getEncoder().encodeToString(result)
-                    : toHex(result);
+                    : CryptoSupport.toHex(result);
         } catch (Exception e) {
             throw new RuntimeException("HMAC签名失败[" + algorithm + "]: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * 恒定时间字符串比较, 防止时序攻击
-     *
-     * @param a 字符串 a
-     * @param b 字符串 b
-     * @return true=相等
-     */
-    private static boolean constantTimeEquals(String a, String b) {
-        if (a.length() != b.length()) {
-            return false;
-        }
-        int result = 0;
-        for (int i = 0; i < a.length(); i++) {
-            result |= a.charAt(i) ^ b.charAt(i);
-        }
-        return result == 0;
-    }
-
-    /**
-     * 字节数组转小写十六进制字符串
-     *
-     * @param bytes 字节数组
-     * @return 小写十六进制字符串
-     */
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b & 0xff));
-        }
-        return sb.toString();
     }
 }

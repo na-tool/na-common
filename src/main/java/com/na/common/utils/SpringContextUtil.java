@@ -4,7 +4,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
 /**
  * Spring 上下文工具, 用于在非 Spring 托管对象中获取容器里的 Bean / 配置项
@@ -25,7 +24,8 @@ import org.springframework.stereotype.Component;
  * String appId = SpringContextUtil.getProperty("wx.appid");
  * }</pre>
  */
-@Component("applicationUtil")
+// 注册由 NaCommonAutoConfiguration 的注册器接管, Bean 名 springContextUtil
+// (原名 applicationUtil 过于通用, 极易与宿主自定义 Bean 撞名)
 public class SpringContextUtil implements ApplicationContextAware {
 
     /** 容器启动时由 Spring 回调注入; ApplicationContext 本身线程安全 */
